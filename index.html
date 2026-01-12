@@ -1,0 +1,2801 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      body {
+          text-align: center;
+          overflow: hidden;
+          background: black;
+      }
+
+      #contain-game {
+          position: relative;
+          scale: 200%;
+          top: 150px;
+          overflow: hidden;
+      }
+
+
+      #gameCanvas {
+          border: 8px white solid;
+          image-rendering: pixelated;
+      }
+
+      #gameStartButton {
+          width: 68px;
+          height: 64px;
+          position: relative;
+          background: url("Art/start_button3.png") no-repeat;
+          border: none;
+          image-rendering: pixelated;
+          top: -40px;
+          left: 175px;
+      }
+
+      #gameStartButton:hover {
+          background: url("art/start_button_hover.png") no-repeat;
+      }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <link rel="icon" type="image/x-icon" href="Art/favicon.ico">
+    
+    <title>Working Edition</title>
+  </head>
+  <body>
+    <div id="contain-game">
+      <button id='gameStartButton' onclick="setupGameInstance()"></button>
+      <canvas id='gameCanvas' width='256' height='256'></canvas>
+    </div>
+        <script>
+          const levels = {
+              1: [ // 0 = air, 1 = grass, 2 = dirt, 3 = spike, 4 = decoration grass, 5 = right grass edge, 6 = left grass edge, 7 = double grass edge, 8 = player spawn, 
+                    // 9 = spike both edges, 10 = deco grass with left ledge, 11 = spike with left edge, 12 = spike with right edge, 13 = windflower, 14 = house, 15 = healingbush, 16 = door, 17 = end sign.
+                    [ 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 5, 1, 6, 5, 1, 6, 0, 5, 1, 6, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 3, 0, 2, 0, 0, 0, 2, 1, 6, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 8, 0, 4, 5, 1, 1, 6, 5, 1, 6, 5, 1, 6, 0, 0, 5, 1, 6, 5, 1, 10, 13, 0, 2, 0, 0, 2, 1, 11, 2, 3, 3, 3, 2, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 0, 0, 2, 0, 0, 2, 0, 0, 5, 1, 2, 3, 3, 2, 1, 1, 6, 2, 3, 3, 2, 2, 1, 2, 2, 2, 2, 2, 2, 3, 3, 12, 1, 6, 2, 0, 0, 0, 0, 0, 5, 1, 6, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 3, 3, 2, 1, 11, 3, 2, 2, 2, 2, 2, 2, 2, 0, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 5, 1, 2, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 10, 0, 0, 0, 2, 1, 6, 2, 2, 0, 0, 0, 0, 0, 17],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 6, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 5, 1],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 16, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 16, 0, 0, 0, 0, 0, 2],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 12, 1, 6, 0, 0, 5, 1, 1, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 1, 6, 0, 0, 13, 0, 2],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 1, 11, 3, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 6, 0, 2, 2, 2, 2, 0, 0, 5, 1, 1, 2],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 5, 1, 6, 0, 13, 0, 0, 0, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 6, 0, 2, 2, 2],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 2, 0, 5, 1, 6, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2, 3, 3, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 0, 0, 5, 1, 6, 0, 0, 0, 0, 0, 5, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 6, 0, 2, 0, 5, 1, 6, 0, 5, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 3, 3, 2, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+              ],
+              2: [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 5, 1, 6, 0, 5, 1, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17],
+                    [2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 1, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 6, 0, 0, 0],
+                    [2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 5, 1, 6, 0, 0, 0, 0, 0, 5, 1],
+                    [2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 5, 1, 1, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 1, 6, 0, 0, 0, 0, 0, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 1, 1, 6, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 0, 0, 2, 0, 0, 5, 1, 1, 10, 0, 0, 0, 5, 1, 2, 0, 0, 0, 0, 5, 1, 6, 0, 0, 0, 5, 1, 1, 6, 5, 1, 6, 0, 0, 5, 1, 6, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 2],
+                    [2, 0, 0, 2, 1, 6, 0, 0, 2, 1, 9, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 2, 1, 11, 3, 3, 3, 2, 2, 0, 0, 0, 0, 0, 5, 1, 2, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 0, 0, 2],
+                    [2, 8, 4, 0, 0, 0, 5, 1, 2, 2, 2, 2, 2, 0, 0, 0, 0, 13, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 2, 2, 3, 3, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 7, 1, 1, 11, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 6, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 6, 0, 0, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 12, 1, 1, 11, 12, 1, 11, 3, 3, 2, 2, 3, 3, 3, 3, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 6, 5, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 2, 2, 2, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 2, 2, 5, 1, 1, 1, 1, 6, 0, 5, 1, 6, 0, 5, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 2, 2, 0, 0, 0, 0, 2, 3, 3, 3, 2, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17],
+                    [2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 5, 1, 6, 5, 1, 6, 5, 1, 6, 0, 0, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    [2, 2, 2, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 3, 3, 2, 3, 3, 2, 12, 1, 11, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 1, 6, 5, 1, 1, 1, 6, 0, 5, 1, 1, 1, 6, 0, 5, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 2, 2, 2, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+              ],
+              3: [
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 5, 1, 7, 1, 6, 0, 5, 1, 6, 0, 0, 0, 0, 2, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 3, 3, 3, 2, 13, 4, 0, 0, 0, 2, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 6, 0, 2, 0, 5, 1, 1, 6, 0, 0, 0, 5, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 6, 0, 4, 2, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 3, 3, 2, 2, 1, 1, 1, 7, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 7, 1, 2, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 13, 4, 16, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 2, 1, 6, 5, 1, 6, 0, 0, 5, 1, 6, 0, 5, 1, 6, 0, 5, 1, 1, 1, 1, 1, 6, 2],
+                    [2, 0, 0, 5, 1, 6, 5, 1, 6, 5, 1, 7, 1, 1, 6, 5, 1, 6, 0, 0, 0, 2, 2, 3, 3, 2, 12, 1, 11, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 2, 2, 2, 2, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 13, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 3, 3, 3, 3, 3, 12, 1, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 6, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2],
+                    [2, 0, 5, 1, 1, 6, 0, 0, 4, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 5, 1, 2, 0, 5, 1, 6, 0, 0, 5, 1, 6, 5, 1, 6, 5, 1, 2],
+                    [2, 8, 0, 0, 0, 5, 1, 7, 1, 6, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 6, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 5, 1, 2, 0, 0, 2, 0, 0, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 2, 2, 0, 0, 5, 1, 6, 5, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 11, 3, 2, 2, 3, 3, 2, 3, 3, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 6, 0, 0, 0, 0, 0, 2, 0, 0, 13, 0, 0, 0, 4, 4, 0, 0, 16, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 2, 0, 0, 0, 4, 0, 0, 0, 0, 0, 17],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 2, 2, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 5, 1, 1, 6, 0, 0, 0, 0, 0],
+                    [2, 0, 0, 0, 0, 4, 4, 0, 0, 0, 5, 1, 2, 2, 0, 13, 2, 1, 6, 5, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 2, 1, 6, 5, 1, 7, 1],
+                    [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 12, 1, 2, 2, 3, 3, 2, 2, 1, 6, 0, 0, 0, 0, 0, 0, 5, 1, 2, 0, 0, 0, 13, 0, 2, 2, 0, 0, 2, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 5, 1, 6, 0, 5, 1, 6, 2, 2, 0, 0, 5, 1, 1, 2, 2, 3, 3, 2, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 3, 0, 3, 2, 3, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+              ],
+              4: [
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 5, 1, 6, 0, 0, 0, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 1, 6, 0, 2, 0, 0, 0, 0, 2, 2, 2, 2, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 0, 2, 2, 2, 2, 0, 0, 2, 5, 1, 6, 0, 0, 0, 0, 0, 17],
+                    [2, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 5, 1, 6, 0, 2, 3, 3, 2, 2, 2, 2, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 1, 1, 1, 1, 1, 1, 1, 1, 6, 0, 0, 0, 0, 0, 0, 5, 1, 6, 0, 2, 3, 3, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2, 0, 2, 0, 5, 1, 1, 1, 1, 1],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 6, 0, 5, 1, 6, 2, 3, 3, 2, 2, 2, 2, 0, 13, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 5, 1, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2, 3, 3, 2, 3, 2, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 13, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 1, 1, 6, 0, 0, 0, 5, 1, 6, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 6, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 17],
+                    [2, 2, 2, 3, 12, 1, 11, 3, 2, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0],
+                    [2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 5, 1, 6, 0, 0, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 13, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 5, 1, 1, 3, 3, 2, 5, 1, 6, 5, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 3, 2, 2, 2, 2, 2, 3, 2, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+              ],
+              5: [
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 13, 0, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 5, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 6, 0, 5, 1, 1, 1, 1, 1, 1, 6, 2],
+                    [2, 0, 0, 5, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 2],
+                    [2, 0, 0, 0, 0, 0, 13, 0, 5, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 2],
+                    [2, 5, 1, 6, 5, 1, 1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1, 1, 1, 6, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2],
+                    [2, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 16, 0, 13, 0, 2],
+                    [2, 1, 1, 1, 1, 1, 6, 5, 1, 6, 5, 1, 6, 5, 1, 6, 0, 5, 1, 1, 1, 1, 1, 6, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 0, 8, 0, 0, 0, 0, 13, 0, 0, 4, 4, 0, 0, 0, 13, 0, 4, 0, 0, 0, 0, 0, 0, 2],
+                    [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+              ]
+          };
+        </script>
+        <script>
+          function randomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min);
+          }
+
+          class Enemyclass {
+            constructor() {
+              this.enemiesProperties = {
+                enemynum: 0,
+                enemytype: [], // 0 = skeleton, 1 = Mole
+                x: [],
+                y: [],
+                health: [], // Skeletons have 3 health points, Moles have 2.
+                gravity: [],
+                colliding: [],
+                onfloor: [],
+                speed: 2,
+                attacking: [],
+                itacking: [],
+                dir: [],
+                anim: [],
+                healthbarup: [],
+                attackanim: []
+              };
+              this.maxenemies = 24;
+              this.index = 0;
+              this.erow = 0;
+              this.ecol = 0;
+              this.checkTile = 0;
+              this.pathfinding = {
+                openSet: [],
+                closeSet: [],
+                start: [],
+                end: []
+              };
+              this.enemySpawnTimer = 0;
+              this.spawnedEnemy = 0;
+              this.enemyOptimize = {
+                roundedX: 0,
+                startingRoundedX: 0,
+                endRoundedX: 0
+              }
+              this.enemyDistances = {
+                index: [],
+                distance: [],
+                closestIndex: 0,
+                enemyidx: 0
+              }
+              this.spawnanenemy = {
+                x: 0,
+                y: 0
+              }
+              this.deadEnemies = [];
+            }
+
+            createNewEnemy(type) {
+              if (this.enemiesProperties.enemynum < this.maxenemies) {
+                this.enemiesProperties.enemynum += 1;
+                if(game_handler.properties.level > 1 && game_handler.properties.level < 2) {
+                  this.spawnedEnemy = 0;
+                  this.enemiesProperties.enemytype.push(0);
+                } else if(game_handler.properties.level > 1) {
+                  this.spawnedEnemy = Math.round(Math.random());
+                  console.log(this.spawnedEnemy);
+                  this.enemiesProperties.enemytype.push(this.spawnedEnemy);
+                }
+                this.spawnanenemy.x = randomNumber(0, levels[game_handler.properties.level][1].length - 1);
+                this.spawnanenemy.y = randomNumber(0, levels[game_handler.properties.level].length - 1);
+                if(levels[game_handler.properties.level][this.spawnanenemy.y][this.spawnanenemy.x] === 0) {
+                  console.log("Found")
+                  this.enemiesProperties.x.push(this.spawnanenemy.x * 32);
+                  this.enemiesProperties.y.push(this.spawnanenemy.y * 32)
+                } else {
+                  this.enemiesProperties.x.push(randomNumber(160, levels[game_handler.properties.level][1].length * 32));
+                  this.enemiesProperties.y.push(-10);
+                  console.log("Legacy")
+                }
+                if(this.spawnedEnemy === 0) {
+                  this.enemiesProperties.health.push(3);
+                } else if(this.spawnedEnemy === 1) {
+                  this.enemiesProperties.health.push(2);
+                }
+                this.enemiesProperties.gravity.push(0);
+                this.enemiesProperties.colliding.push(false);
+                this.enemiesProperties.onfloor.push(false);
+                this.enemiesProperties.attacking.push(false);
+                this.enemiesProperties.itacking.push(0);
+                this.enemiesProperties.dir.push(0);
+                this.enemiesProperties.anim.push(0);
+                this.enemiesProperties.healthbarup.push(0);
+                this.enemiesProperties.attackanim.push(0);
+              }
+            }
+
+            deleteEnemy(index) {
+              this.deadEnemies.push(index);
+            }
+
+            drawEnemies(camerax, cameray) {
+              this.index = 0;
+              for(this.index = 0; this.index < this.enemiesProperties.enemynum; this.index++) {
+                if(this.enemiesProperties.enemytype[this.index] === 0) {
+                  // Skeleton
+                  ctx.fillStyle = "lightGrey";
+                  if(this.enemiesProperties.attacking[this.index] === false) {
+                    ctx.drawImage(renderImages.skeletonguy, 64 * Math.round(this.enemiesProperties.anim[this.index]), 64 * this.enemiesProperties.dir[this.index], 64, 64, Math.floor(this.enemiesProperties.x[this.index] - camerax), Math.floor(this.enemiesProperties.y[this.index] - cameray), 32, 32);
+                  } else {
+                    ctx.drawImage(renderImages.skeletonguy, 64 * Math.round(this.enemiesProperties.attackanim[this.index]), 128 + (64 * this.enemiesProperties.dir[this.index]), 64, 64, Math.floor(this.enemiesProperties.x[this.index] - camerax), Math.floor(this.enemiesProperties.y[this.index] - cameray), 32, 32)
+                  }
+                } else {
+                  // Mole
+                  if(this.enemiesProperties.gravity[this.index] > 0.5 || this.enemiesProperties.gravity[this.index] < -0.5) {
+                    ctx.drawImage(renderImages.moleattacked, 0, 0, 64, 64, Math.floor(this.enemiesProperties.x[this.index] - camerax), Math.floor(this.enemiesProperties.y[this.index]) - cameray, 32, 32);
+                  } else {
+                    if(this.enemiesProperties.attacking[this.index] === false) {
+                      ctx.drawImage(renderImages.moleattack, 0, 0, 64, 64, Math.floor(this.enemiesProperties.x[this.index] - camerax), Math.floor(this.enemiesProperties.y[this.index]) - cameray, 32, 32);
+                    } else if(this.enemiesProperties.attacking[this.index] === true) {
+                      ctx.drawImage(renderImages.moleattack, Math.round(this.enemiesProperties.attackanim[this.index]) * 64, 0, 64, 64, Math.floor(this.enemiesProperties.x[this.index] - camerax), Math.floor(this.enemiesProperties.y[this.index]) - cameray, 32, 32);
+                    }
+                  }
+                  
+                }
+                if(this.enemiesProperties.healthbarup[this.index] > 0) {
+                  ctx.fillStyle = "#fd5949";
+                  ctx.fillRect(this.enemiesProperties.x[this.index] - camerax, (this.enemiesProperties.y[this.index] - 5) - cameray, this.enemiesProperties.health[this.index] * 8, 5);
+                }
+              }
+            }
+
+            enemiesInit(levels, currentLevel, playerprops) {
+              this.enemySpawnTimer += 0.5;
+              if(this.enemySpawnTimer > 50) {
+                if(Math.random() > 0.975) {
+                  this.createNewEnemy(0);
+                  this.enemySpawnTimer = 0;
+                }
+              }
+              this.enemyDistances.distance = [];
+              this.enemyDistances.index = [];
+              for(this.index = 0; this.index < this.enemiesProperties.enemynum; this.index++) {
+                if(this.enemiesProperties.enemytype[this.index] === 0) {
+                  // Setting up the individual enemy
+                  this.enemiesProperties.speed = 1.5;
+                  // Checking if the player has killed the enemy
+                  if(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)) < 20) {
+                    if(playerprops.attack.finishedAttack === true) {
+                      this.enemyDistances.index.push(this.index);
+                      this.enemyDistances.distance.push(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)));
+                    }
+                  }
+                  // Checking if the enemy has been hit by the player
+                  if(this.enemiesProperties.healthbarup[this.index] > 0) {
+                    this.enemiesProperties.healthbarup[this.index] -= 0.2;
+                  }
+                  // Gravity and stuff \\
+                  this.enemiesProperties.gravity[this.index] += 0.4;
+                  this.enemiesProperties.y[this.index] += this.enemiesProperties.gravity[this.index];
+                  
+                  // This is the start of the code for the skeleton
+                  // Collision \\
+                  this.enemyOptimize.roundedX = Math.round(this.enemiesProperties.x[this.index] / 32);
+                  this.enemyOptimize.startingRoundedX = this.enemyOptimize.roundedX - 3;
+                  this.enemyOptimize.endRoundedX = this.enemyOptimize.roundedX + 3;
+                  if(this.enemyOptimize.startingRoundedX < 0) {
+                    while(this.enemyOptimize.startingRoundedX < 0) {
+                      this.enemyOptimize.startingRoundedX += 1;
+                    }
+                  }
+                  this.enemiesProperties.onfloor[this.index] = false;
+                  for(this.erow = 0; this.erow < levels[currentLevel].length; this.erow++) {
+                    for(this.ecol = this.enemyOptimize.startingRoundedX; this.ecol < this.enemyOptimize.endRoundedX; this.ecol++) {
+                      this.checkTile = levels[currentLevel][this.erow][this.ecol];
+                      if((this.checkTile > 0 && this.checkTile < 4) || this.checkTile === 9 || this.checkTile === 11 || this.checkTile === 12) {
+                        if(this.checkTile === 3 || this.checkTile === 9 || this.checkTile === 11 || this.checkTile === 12) {
+                          if(this.enemiesProperties.x[this.index] >= this.ecol * 32 && this.enemiesProperties.x[this.index] < (this.ecol * 32) + 32) {
+                            if(this.enemiesProperties.y[this.index] + 32 > (this.erow * 32) + 16) {
+                              if(this.enemiesProperties.y[this.index] < (this.erow * 32) + 32) {
+                                if(this.enemiesProperties.y[this.index] < (this.erow * 32) + 16) {
+                                  this.deleteEnemy(this.index);
+                                }
+                              }
+                            }
+                          }
+                        } else {
+                          if(this.enemiesProperties.x[this.index] >= this.ecol * 32) {
+                            if(this.enemiesProperties.x[this.index] <= (this.ecol * 32) + 32) {
+                              if(this.enemiesProperties.y[this.index] + 32 >= this.erow * 32) {
+                                // Checking if the skeleton is above or below the tile
+                                if(this.enemiesProperties.y[this.index] < this.erow * 32) {
+                                  this.enemiesProperties.y[this.index] = (this.erow * 32) - 33;
+                                  this.enemiesProperties.gravity[this.index] = 0;
+                                  this.enemiesProperties.onfloor[this.index] = true;
+                                } else if(this.enemiesProperties.y[this.index] > this.erow * 32) {
+                                  if(this.enemiesProperties.y[this.index] < (this.erow * 32) + 32) {
+                                    this.enemiesProperties.y[this.index] = (this.erow * 32) + 33;
+                                    this.enemiesProperties.gravity[this.index] = 0;
+                                  }
+                                }
+                              } 
+                            }
+                          } 
+                        }
+                      }
+                    }
+                  } 
+                  for(this.erow = 0; this.erow < levels[currentLevel].length; this.erow++) {
+                    for(this.ecol = this.enemyOptimize.startingRoundedX; this.ecol < this.enemyOptimize.endRoundedX; this.ecol++) {
+                      this.checkTile = levels[currentLevel][this.erow][this.ecol];
+                      if(this.checkTile > 0 && this.checkTile < 4 || this.checkTile === 9 || this.checkTile === 11 || this.checkTile === 12) {
+                        if(this.checkTile === 3 || this.checkTile === 9 || this.checkTile === 11 || this.checkTile === 12) {
+                          if(this.enemiesProperties.x[this.index] + 32 >= this.ecol * 32 && this.enemiesProperties.x[this.index] + 32 < (this.ecol * 32) + 32) {
+                            if(this.enemiesProperties.y[this.index] + 32 >= (this.erow * 32) + 16) {
+                              if(this.enemiesProperties.y[this.index] < this.erow * 32) {
+                                this.deleteEnemy(this.index);
+                              }
+                            }
+                          }
+                        } else {
+                          if(this.enemiesProperties.x[this.index] + 32 >= this.ecol * 32 && this.enemiesProperties.x[this.index] + 32 <= (this.ecol * 32) + 32) {
+                            if(this.enemiesProperties.y[this.index] + 32 > this.erow * 32) {
+                              if(this.enemiesProperties.y[this.index] < this.erow * 32) {
+                                this.enemiesProperties.y[this.index] = (this.erow * 32) - 33;
+                                this.enemiesProperties.gravity[this.index] = 0;
+                                this.enemiesProperties.onfloor[this.index] = true;
+                              } else if(this.enemiesProperties.y[this.index] > this.erow * 32) {
+                                if(this.enemiesProperties.y[this.index] < (this.erow * 32) + 32) {
+                                  this.enemiesProperties.y[this.index] = ((this.erow * 32) + 32) + 1;
+                                  this.enemiesProperties.gravity[this.index] = 0;
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  // Enemy Pathfinding \\
+                  this.pathfinding.start[this.index] = [];
+                  this.pathfinding.end[this.index] = [];
+                  for(this.erow = 0; this.erow < levels[currentLevel].length; this.erow++) {
+                    for(this.ecol = 0; this.ecol < levels[currentLevel][this.erow].length; this.ecol++) {
+                      if(this.enemiesProperties.x[this.index] >= this.ecol * 32) {
+                        if(this.enemiesProperties.x[this.index] <= (this.ecol * 32) + 32) {
+                          if(this.enemiesProperties.y[this.index] + 32 >= this.erow * 32) {
+                            if(this.enemiesProperties.y[this.index] + 32 <= (this.erow * 32) + 32) {
+                              this.pathfinding.start[this.index].push(this.ecol, this.erow);
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+              
+                  // Just some simple movement
+                  if (this.enemiesProperties.attacking[this.index] === false) {
+                    if(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)) < 128 && Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)) > 30) {
+                      this.enemiesProperties.colliding[this.index] = false;
+                      if(playerprops.x > this.enemiesProperties.x[this.index]) {
+                        this.enemiesProperties.anim[this.index] += 0.2;
+                        this.enemiesProperties.dir[this.index] = 0;
+                        this.enemiesProperties.x[this.index] += this.enemiesProperties.speed;
+                        for(this.erow = 0; this.erow < levels[currentLevel].length; this.erow++) {
+                          for(this.ecol = this.enemyOptimize.startingRoundedX; this.ecol < this.enemyOptimize.endRoundedX; this.ecol++) {
+                            this.checkTile = levels[currentLevel][this.erow][this.ecol];
+                            if(this.checkTile > 0 && this.checkTile < 4) {
+                              if(this.enemiesProperties.x[this.index] + 32 >= this.ecol * 32) {
+                                if(this.enemiesProperties.x[this.index] + 32 <= (this.ecol * 32) + 32) {
+                                  if(this.enemiesProperties.y[this.index] + 32 >= this.erow * 32) {
+                                    if(this.enemiesProperties.y[this.index] <= this.erow * 32) {
+                                      this.enemiesProperties.x[this.index] -= this.enemiesProperties.speed; 
+                                      this.enemiesProperties.colliding[this.index] = true;
+                                    }				
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                        // Checking if there is a block in front of the enemy \\
+                        for(this.erow = 0; this.erow < levels[currentLevel].length; this.erow++) {
+                          for(this.ecol = this.enemyOptimize.startingRoundedX; this.ecol < this.enemyOptimize.endRoundedX; this.ecol++) {
+                            this.checkTile = levels[currentLevel][this.erow][this.ecol];
+                            if(this.checkTile === 0 || this.checkTile === 5 || this.checkTile === 6 || this.checkTile === 7) {
+                              if(this.enemiesProperties.x[this.index] + 16 >= this.ecol * 32) {
+                                if(this.enemiesProperties.x[this.index] + 16 <= (this.ecol * 32) + 32) {
+                                  if(this.enemiesProperties.y[this.index] + 48 >= this.erow * 32) {
+                                    if(this.enemiesProperties.y[this.index] + 48 <= (this.erow * 32) + 32) {
+                                      if(this.enemiesProperties.onfloor[this.index] === true) {
+                                        this.enemiesProperties.gravity[this.index] = -8;
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      } else if(playerprops.x < this.enemiesProperties.x[this.index]) {
+                        this.enemiesProperties.anim[this.index] += 0.2;
+                        this.enemiesProperties.dir[this.index] = 1;
+                        this.enemiesProperties.x[this.index] -= this.enemiesProperties.speed;
+                        for(this.erow = 0; this.erow < levels[currentLevel].length; this.erow++) {
+                          for(this.ecol = this.enemyOptimize.startingRoundedX; this.ecol < this.enemyOptimize.endRoundedX; this.ecol++) {
+                            this.checkTile = levels[currentLevel][this.erow][this.ecol];
+                            if(this.checkTile > 0 && this.checkTile < 4) {
+                              if(this.enemiesProperties.x[this.index] >= this.ecol * 32) {
+                                if(this.enemiesProperties.x[this.index] <= (this.ecol * 32) + 32) {
+                                  if(this.enemiesProperties.y[this.index] + 32 >= this.erow * 32) {
+                                    if(this.enemiesProperties.y[this.index] <= this.erow * 32) {
+                                      this.enemiesProperties.x[this.index] += this.enemiesProperties.speed;
+                                      this.enemiesProperties.colliding[this.index] = true;
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+              
+                        for(this.erow = 0; this.erow < levels[currentLevel].length; this.erow++) {
+                          for(this.ecol = this.enemyOptimize.startingRoundedX; this.ecol < this.enemyOptimize.endRoundedX; this.ecol++) {
+                            this.checkTile = levels[currentLevel][this.erow][this.ecol];
+                            if(this.checkTile === 0 || this.checkTile === 5 || this.checkTile === 6 || this.checkTile === 7) {
+                              if(this.enemiesProperties.x[this.index] - 14 >= this.ecol * 32) {
+                                if(this.enemiesProperties.x[this.index] - 14 <= (this.ecol * 32) + 32) {
+                                  if(this.enemiesProperties.y[this.index] + 48 >= this.erow * 32) {
+                                    if(this.enemiesProperties.y[this.index] + 48 <= (this.erow * 32) + 32) {
+                                      if(this.enemiesProperties.onfloor[this.index] === true) {
+                                        this.enemiesProperties.gravity[this.index] = -8;
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      if(this.enemiesProperties.anim[this.index] > 3.5) {
+                        this.enemiesProperties.anim[this.index] = 0;
+                      }
+                      if(this.enemiesProperties.colliding[this.index] === true) {
+                        if(this.enemiesProperties.onfloor[this.index] === true) {
+                          this.enemiesProperties.gravity[this.index] = -8;
+                        }
+                      }
+                      if(this.enemiesProperties.onfloor[this.index] === false) {
+                        this.enemiesProperties.anim[this.index] = 2.5;
+                      }
+                    } else if(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)) < 20) {
+                      if(this.enemiesProperties.onfloor[this.index] === true) {
+                        this.enemiesProperties.attacking[this.index] = true;
+                        this.enemiesProperties.attackanim[this.index] = 0;
+                      }
+                    }
+                  } else {
+                    this.enemiesProperties.anim[this.index] = 0;
+                    this.enemiesProperties.attackanim[this.index] += 0.2;
+                    if(playerprops.attack.finishedAttack === true) {
+                      this.enemyDistances.index.push(this.index);
+                      this.enemyDistances.distance.push(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)));
+                    }
+                    if(this.enemiesProperties.attackanim[this.index] > 5) {
+                      this.enemiesProperties.attacking[this.index] = false;
+                      this.enemiesProperties.attackanim[this.index] = 0;
+                      if(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)) < 20) {
+                        playerprops.health -= 1;
+                      } 
+                    }
+                  }
+                  // This is the end of the code for the skeleton
+                  
+                } else if(this.enemiesProperties.enemytype[this.index] === 1) {
+                  // Code for the Mole 
+                  // Width = 28, height = 31
+
+                  // Gonna use collision to check which tile is highest on the map
+                  this.enemiesProperties.gravity[this.index] += 0.4;
+                  this.enemiesProperties.y[this.index] += this.enemiesProperties.gravity[this.index];
+                  // Getting ready for tile check (optimized)
+
+                  this.enemyOptimize.roundedX = Math.round(this.enemiesProperties.x[this.index] / 32);
+                  this.enemyOptimize.startingRoundedX = this.enemyOptimize.roundedX - 3;
+                  this.enemyOptimize.endRoundedX = this.enemyOptimize.roundedX + 3;
+                  if(this.enemyOptimize.startingRoundedX < 0) {
+                    while(this.enemyOptimize.startingRoundedX < 0) {
+                      this.enemyOptimize.startingRoundedX += 1;
+                    }
+                  }
+
+                  for(this.erow = 0; this.erow < levels[currentLevel].length; this.erow++) {
+                    for(this.ecol = this.enemyOptimize.startingRoundedX; this.ecol < this.enemyOptimize.endRoundedX; this.ecol++) {
+                      // Left side check
+                      this.checkTile = levels[currentLevel][this.erow][this.ecol];
+                      if(this.checkTile > 0 && this.checkTile < 4) {
+                        if(this.enemiesProperties.x[this.index] >= this.ecol * 32 && this.enemiesProperties.x[this.index] < (this.ecol * 32) + 32) {
+                          if(this.enemiesProperties.y[this.index] + 31 >= this.erow * 32) {
+                            this.checkTile = levels[currentLevel][this.erow][this.ecol];
+                            if(this.enemiesProperties.y[this.index] <= this.erow * 32) {
+                              this.enemiesProperties.y[this.index] = (this.erow * 32) - 32;
+                              this.enemiesProperties.x[this.index] = this.ecol * 32;
+                              this.enemiesProperties.gravity[this.index] = 0;
+                              if(this.checkTile === 3) {
+                                this.deleteEnemy(this.index);
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // Chasing the player 
+                  if(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)) < 100) {
+                    // Attacking if the player is near
+                    if(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)) < 20) {
+                      if(this.enemiesProperties.attacking[this.index] === false) {
+                        if(this.enemiesProperties.gravity[this.index] < 0.5 && this.enemiesProperties.gravity[this.index] > -0.5) {
+                          this.enemiesProperties.attacking[this.index] = true;
+                          this.enemiesProperties.attackanim[this.index] = 0;
+                        }
+                      }
+                      if(playerprops.attack.finishedAttack) {
+                        this.enemyDistances.index.push(this.index);
+                        this.enemyDistances.distance.push(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)));
+                      }
+                    }
+                    // Chasing the player but being mindful of other moles.
+                    if(this.enemiesProperties.attacking[this.index] === false) {
+                      if(playerprops.x > this.enemiesProperties.x[this.index] + 32) {
+                        this.enemiesProperties.x[this.index] += 32;
+                        for(let indexcheck = 0; indexcheck < this.enemiesProperties.enemytype.length; indexcheck++) {
+                          if(this.enemiesProperties.x[this.index] >= this.enemiesProperties.x[indexcheck] && this.enemiesProperties.x[this.index] < this.enemiesProperties.x[indexcheck] + 32) {
+                            if(!(this.index === indexcheck) && this.enemiesProperties.enemytype[indexcheck] === 1) {
+                              this.enemiesProperties.x[this.index] -= 32;
+                            }
+                          }
+                        }
+                      } else if(playerprops.x < this.enemiesProperties.x[this.index]) {
+                        this.enemiesProperties.x[this.index] -= 32;
+                        for(let indexcheck = 0; indexcheck < this.enemiesProperties.enemytype.length; indexcheck++) {
+                          if(this.enemiesProperties.x[this.index] >= this.enemiesProperties.x[indexcheck] && this.enemiesProperties.x[this.index] < this.enemiesProperties.x[indexcheck] + 32) {
+                            if(!(this.index === indexcheck) && this.enemiesProperties.enemytype[indexcheck] == 1) {
+                              this.enemiesProperties.x[this.index] += 32;
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  // Attacking?
+                  if(this.enemiesProperties.attacking[this.index]) {
+                    this.enemiesProperties.itacking[this.index] += 0.1;
+                    if(this.enemiesProperties.itacking[this.index] > 5) {
+                      this.enemiesProperties.attackanim[this.index] += 0.2;
+                      if(this.enemiesProperties.attackanim[this.index] > 1 && this.enemiesProperties.attackanim[this.index] < 3) {
+                        if(Math.sqrt(((playerprops.x - this.enemiesProperties.x[this.index]) ** 2) + ((playerprops.y - this.enemiesProperties.y[this.index]) ** 2)) < 20) {
+                          playerprops.gravity = 8;
+                          playerprops.health -= 1;
+                          game_handler.properties.cameraX += randomNumber(-10, 10);
+                          game_handler.properties.cameraY -= 10;
+                        }
+                      }
+                      if(this.enemiesProperties.attackanim[this.index] > 8) {
+                        this.enemiesProperties.attacking[this.index] = false;
+                        this.enemiesProperties.itacking[this.index] = 0;
+                      }
+                    }
+                  }
+                  // End of the code for the Mole
+                }
+              }
+              // Checking for which enemy gets attacked if the player attacks
+              if(playerprops.attack.finishedAttack === true) {
+                if (!(this.enemyDistances.index.length === 0)) {
+                  for(this.enemyDistances.enemyidx = 0; this.enemyDistances.enemyidx < this.enemyDistances.index.length; this.enemyDistances.enemyidx++) {
+                    if(this.enemyDistances.enemyidx === 0) {
+                      this.enemyDistances.closestIndex = this.enemyDistances.enemyidx;
+                    } else if(this.enemyDistances.distance[this.enemyDistances.enemyidx] < this.enemyDistances.distance[this.enemyDistances.closestIndex]) {
+                      this.enemyDistances.closestIndex = this.enemyDistances.enemyidx;
+                    }
+                  }
+                  this.enemyDistances.enemyidx = this.enemyDistances.index[this.enemyDistances.closestIndex];
+                  playerprops.attack.finishedAttack = false;
+                  this.enemiesProperties.health[this.enemyDistances.enemyidx] -= 1;
+                  this.enemiesProperties.healthbarup[this.enemyDistances.enemyidx] = 10;
+                  playerprops.attack.finishedAttack = false;
+                  this.enemiesProperties.gravity[this.enemyDistances.enemyidx] = -5;
+                  if(this.enemiesProperties.health[this.enemyDistances.enemyidx] < 1) {
+                    this.deleteEnemy(this.enemyDistances.enemyidx);
+                    enemiesKilled += 1;
+                  }
+                }
+              }
+              for(let i = 0; i < this.deadEnemies.length; i++) {
+                this.enemiesProperties.enemynum -= 1;
+                this.enemiesProperties.enemytype.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.x.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.y.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.health.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.gravity.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.colliding.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.onfloor.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.attacking.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.itacking.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.dir.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.anim.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.healthbarup.splice(this.deadEnemies[i], 1);
+                this.enemiesProperties.attackanim.splice(this.deadEnemies[i], 1);
+              }
+              this.deadEnemies = [];
+            }
+
+
+
+            init(cameraX, levels, currentLevel, playerprops, cameraY) {
+              this.enemiesInit(levels, currentLevel, playerprops);
+              this.drawEnemies(cameraX, cameraY);
+            }
+          }
+        </script>
+        <script>
+          let c = document.getElementById('gameCanvas');
+          let ctx = c.getContext('2d');
+
+          console.log("hello world.");
+
+          let playerInputs = {
+              w: false,
+              a: false,
+              s: false,
+              d: false,
+              arrowleft: false,
+              arrowright: false,
+              arrowup: false,
+              x: false,
+              z: false
+          };
+          let htmlStartGameButton = document.getElementById('gameStartButton');
+          let timesReset = 0;
+          let timesDied = 0;
+          let flashOpacity = 1;
+          let enemiesKilled = 0;
+          let controlsAllowed = true;
+          let monstersAllowed = true;
+          let finalTimer = 210;
+
+          let parentsSpoken = [false, false];
+
+          let textures = {
+              spikeTexture: "Art/spikeTexture2.png",
+              backgroundTexture: "Art/bg2.png",
+              grasstile1: "Art/grasstilechange1.png",
+              grassedge1: "Art/grassedge1.png",
+              grassedge2: "Art/grassedge2.png",
+              decograss1: "Art/decograss1.png",
+              doublegrassedge: "Art/grassedge1/grassedgeassets0.png",
+              spikebe: "Art/grassedge1/grassedgeassets1.png",
+              decograssledge: "Art/grassedge1/grassedgeassets6.png",
+              playertexture: "Art/playertexture.png",
+              skeletonguy: "Art/skellyguy3.png",
+              playerattack: "Art/playerattack.png",
+              spikele: "Art/grassedge1/grassedgeassets3.png",
+              spikere: "Art/grassedge1/grassedgeassets2.png",
+              windflowerconcept: "Art/windflowerconcept4.png",
+              healingbushmonster: "Art/healingbushconcept3.png",
+              deathbackground: "Art/deathbg2.png",
+              healthbar: "Art/healthbar2.png",
+              molemonster: "Art/moleattack.png",
+              molemonsterattacked: "Art/moleattacked.png",
+              doortexture: "Art/Door.png",
+              doorkeytexture: "Art/doorkey.png",
+              buttonhealtexture: "Art/buttonheal2.png",
+              enemieskilledlabeltexture: "Art/enemieskilledlabel3.png",
+              npctexture1: "Art/NPCtexture1.png",
+              npctexture2: "Art/NPCtexture2.png",
+              npctexture3: "Art/NPCtexture32.png",
+              npctexture4: "Art/NPCtexture4.png",
+              dialoguebgtexture: "Art/DialogueBGtexture.png",
+              speakkeyhinttexture: "Art/speakkeyhint.png",
+              theguardianstexture: "Art/theguardians.png",
+              villaintexture: "Art/mainvillain2.png",
+              endkeyhinttexture: "Art/endkeyhint.png",
+              lastendkeyhinttexture: "Art/lastendkeyhint.png",
+              artifacttexture: "Art/artifactFinished.png",
+              housetexture: "Art/parentshome.png",
+              villainmomtexture: "Art/mother.png",
+              villaindadtexture: "Art/father.png",
+              finalcutscenetexture: "Art/finalCS3.png",
+              backgroundparallaxmountaintexture: "Art/parallaxmount3.png",
+              endsigntexture: "Art/endsign.png"
+          };
+
+          let renderImages = {
+              spike: 0,
+              bgtexture: 0,
+              grasstile1: 0,
+              grassedge1: 0,
+              grassedge2: 0,
+              decograss1: 0,
+              doublegrassedge: 0,
+              spikebe: 0,
+              decograssledge: 0,
+              playertexture: 0,
+              skeletonguy: 0,
+              playerattack: 0,
+              spikele: 0,
+              spikere: 0,
+              windflowerconc: 0,
+              healingbushmonster: 0,
+              deathbackground: 0,
+              playerhealth: 0,
+              moleattack: 0,
+              moleattacked: 0,
+              door: 0,
+              doorkey: 0,
+              buttonheal: 0,
+              enemieskilledlabel: 0,
+              npc1: 0,
+              npc2: 0,
+              npc3: 0,
+              npc4: 0,
+              dialoguebg: 0,
+              speakkeyhint: 0,
+              theguardians: 0,
+              villain: 0,
+              endkeyhint: 0,
+              lastendkeyhint: 0,
+              artifact: 0,
+              parentshouse: 0,
+              villainmom: 0,
+              villaindad: 0,
+              finalcutscene: 0,
+              bgparallaxmount: 0,
+              endsign: 0
+          };
+
+          // Setting up image rendering
+          renderImages.spike = new Image();
+          renderImages.spike.src = textures.spikeTexture;
+
+          renderImages.bgtexture = new Image();
+          renderImages.bgtexture.src = textures.backgroundTexture;
+          renderImages.bgparallaxmount = new Image();
+          renderImages.bgparallaxmount.src = textures.backgroundparallaxmountaintexture;
+
+          renderImages.grasstile1 = new Image();
+          renderImages.grasstile1.src = textures.grasstile1;
+
+          renderImages.grassedge1 = new Image();
+          renderImages.grassedge1.src = textures.grassedge1;
+
+          renderImages.grassedge2 = new Image();
+          renderImages.grassedge2.src = textures.grassedge2;
+
+          renderImages.decograss1 = new Image();
+          renderImages.decograss1.src = textures.decograss1;
+
+          renderImages.doublegrassedge = new Image();
+          renderImages.doublegrassedge.src = textures.doublegrassedge;
+
+          renderImages.spikebe = new Image();
+          renderImages.spikebe.src = textures.spikebe;
+
+          renderImages.decograssledge = new Image();
+          renderImages.decograssledge.src = textures.decograssledge;
+
+          renderImages.spikele = new Image();
+          renderImages.spikele.src = textures.spikele;
+
+          renderImages.spikere = new Image();
+          renderImages.spikere.src = textures.spikere;
+
+          renderImages.windflowerconc = new Image();
+          renderImages.windflowerconc.src = textures.windflowerconcept;
+          renderImages.healingbushmonster = new Image();
+          renderImages.healingbushmonster.src = textures.healingbushmonster;
+          renderImages.buttonheal = new Image();
+          renderImages.buttonheal.src = textures.buttonhealtexture;
+          renderImages.door = new Image();
+          renderImages.door.src = textures.doortexture;
+          renderImages.doorkey = new Image();
+          renderImages.doorkey.src = textures.doorkeytexture;
+          renderImages.deathbackground  = new Image();
+          renderImages.deathbackground.src = textures.deathbackground;
+
+          renderImages.playertexture = new Image();
+          renderImages.playertexture.src = textures.playertexture;
+          renderImages.playerattack = new Image();
+          renderImages.playerattack.src = textures.playerattack;
+          renderImages.playerhealth = new Image();
+          renderImages.playerhealth.src = textures.healthbar;
+          renderImages.skeletonguy = new Image();
+          renderImages.skeletonguy.src = textures.skeletonguy;
+          renderImages.moleattack = new Image();
+          renderImages.moleattack.src = textures.molemonster;
+          renderImages.moleattacked = new Image();
+          renderImages.moleattacked.src = textures.molemonsterattacked;
+
+          renderImages.dialoguebg = new Image();
+          renderImages.dialoguebg.src = textures.dialoguebgtexture;
+          renderImages.npc1 = new Image();
+          renderImages.npc1.src = textures.npctexture1;
+          renderImages.npc2 = new Image();
+          renderImages.npc2.src = textures.npctexture2;
+          renderImages.npc3 = new Image();
+          renderImages.npc3.src = textures.npctexture3;
+          renderImages.npc4 = new Image();
+          renderImages.npc4.src = textures.npctexture4;
+          renderImages.villain = new Image();
+          renderImages.villain.src = textures.villaintexture;
+
+          renderImages.speakkeyhint = new Image();
+          renderImages.speakkeyhint.src = textures.speakkeyhinttexture;
+          renderImages.endkeyhint = new Image();
+          renderImages.endkeyhint.src = textures.endkeyhinttexture;
+          renderImages.lastendkeyhint = new Image();
+          renderImages.lastendkeyhint.src = textures.lastendkeyhinttexture;
+
+          renderImages.theguardians = new Image();
+          renderImages.theguardians.src = textures.theguardianstexture;
+
+          renderImages.enemieskilledlabel = new Image();
+          renderImages.enemieskilledlabel.src = textures.enemieskilledlabeltexture;
+
+          renderImages.artifact = new Image();
+          renderImages.artifact.src = textures.artifacttexture;
+
+          renderImages.parentshouse = new Image();
+          renderImages.parentshouse.src = textures.housetexture;
+          renderImages.villainmom = new Image();
+          renderImages.villainmom.src = textures.villainmomtexture;
+          renderImages.villaindad = new Image();
+          renderImages.villaindad.src = textures.villaindadtexture;
+
+          renderImages.finalcutscene = new Image();
+          renderImages.finalcutscene.src = textures.finalcutscenetexture;
+          renderImages.endsign = new Image();
+          renderImages.endsign.src = textures.endsigntexture;
+
+          // Checking if the textures are all loaded in \\
+          let assets = 0;
+          let maxAssets = 40;
+          function assetLoaded() {
+              assets += 1;
+              console.log(assets);
+          }
+          // Textures
+          renderImages.spike.onload = assetLoaded();
+          renderImages.bgtexture.onload = assetLoaded();
+          renderImages.grasstile1.onload = assetLoaded();
+          renderImages.grassedge1.onload = assetLoaded();
+          renderImages.grassedge2.onload = assetLoaded();
+          renderImages.decograss1.onload = assetLoaded();
+          renderImages.doublegrassedge.onload = assetLoaded();
+          renderImages.spikebe.onload = assetLoaded();
+          renderImages.decograssledge.onload = assetLoaded();
+          renderImages.playertexture.onload = assetLoaded();
+          renderImages.skeletonguy.onload = assetLoaded();
+          renderImages.spikele.onload = assetLoaded();
+          renderImages.spikere.onload = assetLoaded();
+          renderImages.windflowerconc.onload = assetLoaded();
+          renderImages.healingbushmonster.onload = assetLoaded();
+          renderImages.deathbackground.onload = assetLoaded();
+          renderImages.playerhealth.onload = assetLoaded();
+          renderImages.moleattack.onload = assetLoaded();
+          renderImages.moleattacked.onload = assetLoaded();
+          renderImages.door.onload = assetLoaded();
+          renderImages.doorkey.onload = assetLoaded();
+          renderImages.buttonheal.onload = assetLoaded();
+          renderImages.enemieskilledlabel.onload = assetLoaded();
+          renderImages.npc1.onload = assetLoaded();
+          renderImages.dialoguebg.onload = assetLoaded();
+          renderImages.npc2.onload = assetLoaded();
+          renderImages.npc3.onload = assetLoaded();
+          renderImages.npc4.onload = assetLoaded();
+          renderImages.speakkeyhint.onload = assetLoaded();
+          renderImages.theguardians.onload = assetLoaded();
+          renderImages.villain.onload = assetLoaded();
+          renderImages.endkeyhint.onload = assetLoaded();
+          renderImages.lastendkeyhint.onload = assetLoaded();
+          renderImages.artifact.onload = assetLoaded();
+          renderImages.parentshouse.onload = assetLoaded();
+          renderImages.villainmom.onload = assetLoaded();
+          renderImages.villaindad.onload = assetLoaded();
+          renderImages.finalcutscene.onload = assetLoaded();
+          renderImages.bgparallaxmount.onload = assetLoaded();
+          renderImages.endsign.onload = assetLoaded();
+
+          // Classes and Stuff
+
+          class gameInfo {
+              constructor() {
+                    this.properties = {
+                        level: null,
+                        gameReady: false,
+                        cameraX: 0,
+                        cameraY: 0,
+                        status: 0, // 0 = title screen, 1 = game, 2 = ending ig? then it loops back to title screen but the player can choose which level he goes to maybe 3 = death
+                        imageDrawn: 0,
+                        dir: 0 // 0 = right, 1 = left
+                    };
+                    this.windflowerProps = {
+                        anim: 0
+                    }
+                    this.health = 10;
+                    this.checkmap = {
+                        startingx: 0,
+                        endingx: 0,
+                        roundedx: 0
+                    }
+                    this.endingscene = {
+                        fade: 0
+                    }
+                    this.deathscene = {
+                        fade: 0,
+                        start: true
+                    }
+                    this.desired = {
+                        camx: 0,
+                        camy: 0
+                    }
+                    this.underworld = {
+                        count: 0,
+                        start: true,
+                        guardians: false,
+                        fade: 1,
+                        guardiantime: 0
+                    }
+                    this.goodending = {
+                        time: 0,
+                        secretChance: 0
+                    }
+                    this.underworldending = {
+                        time: 0
+                    }
+                    /* 
+                    0 = air
+                    1 = grass
+                    2 = dirt
+                    3 = spikes
+                    4 = deco_grass
+                    */
+                    this.currentTile = 0;
+                    this.se = {
+                        time: 0
+                    }
+              }
+
+
+              gameSetup() {
+                    // If a level isn't selected via the level selection menu, the level will be set to level 1
+                    if(this.properties.level === null) {
+                        this.properties.level = 1;
+                        this.properties.gameReady = true;
+                    } else {
+                        this.properties.gameReady = true;
+                    }
+              }
+
+              titleScreen() {
+                    // Rendering the background picture \\
+                    ctx.drawImage(renderImages.bgtexture, 0, 0, 256, 256);
+                    // The title
+                    ctx.fillStyle = "#e7a740";
+                    ctx.font = "20px Monospace";
+                    ctx.fillText("The Artifact Quest", 20, 40);
+              }
+
+              ending(player, windflower, enemy) {
+                    // Getting everything ready
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(0, 0, c.width, c.height);
+                    // Starting the ending scene
+                    this.endingscene.fade += 0.001;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.endingscene.fade})`;
+                    ctx.fillRect(0, 0, c.width, c.height);
+                    ctx.font = "10px Courier";
+                    ctx.fillStyle = "black";
+                    ctx.fillText("You have finished the game.", 0, 128);
+                    if(this.endingscene.fade > 0.500) {
+                        ctx.fillText("Congratulations.", 0, 148);
+                    }
+                    if(this.endingscene.fade > 0.900) {
+                        ctx.fillText("Press the left arrow to go to the menu.", 0, 218);
+                        if(playerInputs.arrowleft) {
+                              player = 0;
+                              windflower = 0;
+                              enemy = 0;
+                              resetGame();
+                        }
+                    }
+
+              }
+              
+              death(player, enemy, windflower, healbush) {
+                    // Getting everything ready
+                    if(timesDied > 0) {
+                        if(this.deathscene.start) {
+                              this.deathscene.fade = 0;
+                              this.deathscene.start = false;
+                        } else {
+                              this.deathscene.fade += 0.002;
+                              ctx.fillStyle = `rgba(255, 255, 255, ${this.deathscene.fade})`;
+                              ctx.fillRect(0, 0, c.width, c.height);
+                              ctx.font = "10px Courier";
+                              ctx.fillStyle = "black";
+                              ctx.fillText("You died.", 100, 128);
+                              if(this.deathscene.fade > 0.300) {
+                                  ctx.fillText("Press Z to restart", 70, 138);
+                                  if(playerInputs.z === true) {
+                                        this.properties.status = 1;
+                                        timesDied += 1;
+                                        this.deathscene.start = true;
+                                  }
+                              }
+                        }
+                    } else {
+                        ctx.drawImage(renderImages.deathbackground, 0, 0);
+                        // Starting the ending scene
+                        if(this.deathscene.start) {
+                              this.deathscene.fade = 0;
+                              this.deathscene.start = false;
+                        }
+                        this.deathscene.fade += 0.004;
+                        ctx.fillStyle = `rgba(255, 255, 255, ${this.deathscene.fade})`;
+                        ctx.fillRect(0, 0, c.width, c.height);
+                        ctx.font = "10px Courier";
+                        ctx.fillStyle = "black";
+                        ctx.fillText("You died.", 100, 128);
+                        if(this.deathscene.fade > 0.600) {
+                              ctx.fillText('But an unknown force is bringing', 30, 148);
+                              ctx.fillText("you back.", 100, 158)
+                        }
+                        if(this.deathscene.fade > 1) {
+                              this.properties.status = 1;
+                              timesDied += 1;
+                              this.deathscene.start = true;
+                        }
+                    }
+              }
+
+              goodEnding() {
+                    this.goodending.time += 0.002;
+                    if(this.goodending.secretChance === 0) {
+                        this.goodending.secretChance = randomNumber(0, 100);
+                        console.log(this.goodending.secretChance);
+                    } else {
+                        if(this.goodending.secretChance > 52 && this.goodending.secretChance < 60) {
+                              if(this.goodending.time > 1.700) {
+                                  ctx.fillStyle = "white";
+                                  ctx.font = "15px Courier";
+                                  ctx.fillText("The Good Ending.", 0, 128);
+                              }
+                              if(this.goodending.time < 1.700) {
+                                  ctx.drawImage(renderImages.finalcutscene, 96, 32, 64, 64);
+                                  if(this.goodending.time > 0) {
+                                        ctx.fillStyle = "white";
+                                        ctx.font = "10px Courier";
+                                        ctx.fillText('"My parents never cared for me."', 0, 128);
+                                  }
+                                  if(this.goodending.time > 0.200) {
+                                        ctx.fillText('The villain speaks in his final moments.', 0, 138);
+                                  }
+                                  if(this.goodending.time > 0.250) {
+                                        ctx.fillText('He speaks to you.', 0, 148);
+                                  }
+                                  if(this.goodending.time > 0.450) {
+                                        ctx.fillText('"I can still hear them... I can still feel', 0, 158);
+                                        ctx.fillText('the weight of their expectations."', 0, 168);
+                                  }
+                                  if(this.goodending.time > 0.650) {
+                                        ctx.fillText('You hear a faint ringing.', 0, 178);
+                                  }
+                                  if(this.goodending.time > 0.850) {
+                                        ctx.fillText('"I only wanted to break free."', 0, 188);
+                                  }
+                                  if(this.goodending.time > 1.050) {
+                                        ctx.fillText('The ringing noise gets louder.', 0, 198);
+                                  }
+                                  if(this.goodending.time > 1.250) {
+                                        ctx.fillText('You can hear the world as the', 0, 208);
+                                        ctx.fillText("artifact rebuilds it.", 0, 218);
+                                  }
+                                  if(this.goodending.time > 1.450) {
+                                        ctx.fillText('"I can hear them now... They are.."', 0, 228);
+                                  }
+                                  if(this.goodending.time > 1.650) {
+                                        ctx.fillText('"crying?"', 0, 238);
+                                  }
+                              }
+                              ctx.font = "10px Courier";
+                              if(this.goodending.time > 1.700) {
+                                  ctx.fillText("You picked up the artifact and undid", 0, 138);
+                                  ctx.fillText("everything the villain caused.", 0, 148);
+                              }
+                        } else {
+                              if(this.goodending.time > 0) {
+                                  ctx.fillStyle = "white";
+                                  ctx.font = "15px Courier";
+                                  ctx.fillText("The Good Ending.", 0, 128);
+                              }
+                              ctx.font = "10px Courier";
+                              if(this.goodending.time > 0.100) {
+                                  ctx.fillText("You picked up the artifact and undid", 0, 138);
+                                  ctx.fillText("everything the villain caused.", 0, 148);
+                              }
+                        }
+                    }
+              }
+
+              gameLost() {
+                    ctx.fillStyle = "white";
+                    ctx.font = "15px Courier";
+                    ctx.fillText("Bad Ending", 0, 128);
+                    ctx.font = "10px Courier";
+                    ctx.fillText("You lost.", 0, 138);
+              }
+
+              underworldEnding() {
+                    this.underworldending.time += 0.001;
+                    if(this.underworldending.time > 0) {
+                        ctx.fillStyle = "white";
+                        ctx.font = "15px Courier";
+                        ctx.fillText("Underworld Ending", 0, 128);
+                    }
+                    if(this.underworldending.time > 0.100) {
+                        ctx.font = "10px Courier";
+                        ctx.fillText("You stayed unbothered by the end of the", 0, 138);
+                        ctx.fillText("world and stayed in the Underworld.", 0, 148);
+                    }
+              }
+
+              underworldFound() {
+                    if(this.underworld.start === true) {
+                        this.underworld.count = 0;
+                        this.underworld.start = false;
+                    } else {
+                        ctx.font = "10px Courier";
+                        if(this.underworld.guardians === false) {
+                              this.underworld.count += 0.002;
+                              ctx.fillStyle = "white";
+                              if(this.underworld.count > 0.100) {
+                                  ctx.fillText("Who are you?", 0, 128);
+                              }
+                              if(this.underworld.count > 0.500) {
+                                  ctx.fillText("You're not meant to be here.", 0, 138);
+                              }
+                              if(this.underworld.count > 0.900) {
+                                  ctx.fillText("Although...", 0, 148);
+                              }
+                              if(this.underworld.count > 1.000)  {
+                                  ctx.fillText("You do look familiar..", 0, 158);
+                              }
+                              if(this.underworld.count > 1.400) {
+                                  ctx.fillText("Let me introduce you to the guardians.", 0, 168);
+                              }
+                              if(this.underworld.count > 1.600) {
+                                  this.underworld.guardians = true;
+                              }
+                        } else {
+                              ctx.drawImage(renderImages.theguardians, 0, 0);
+                              this.underworld.fade -= 0.001;
+                              ctx.fillStyle = `rgba(0, 0, 0, ${this.underworld.fade})`;
+                              ctx.fillRect(0, 0, 256, 256);
+                              if(this.underworld.fade < 0) {
+                                  this.underworld.guardiantime += 0.004;
+                                  ctx.fillStyle = "white";
+                                  if(this.underworld.guardiantime < 1) {
+                                        if(this.underworld.guardiantime > 0) {
+                                            ctx.fillText("Hello, hero.", 0, 178);
+                                        }
+                                        if(this.underworld.guardiantime > 0.300) {
+                                            ctx.fillText("We are the ancient forces that once", 0, 188);
+                                            ctx.fillText("protected this world.", 0, 198);
+                                        }
+                                        if(this.underworld.guardiantime > 0.600) {
+                                            ctx.fillText("We saw what you were doing.", 0, 208);
+                                        }
+                                        if(this.underworld.guardiantime > 0.700) {
+                                            ctx.fillText("Trying to get the sacred artifact.", 0, 218);
+                                        }
+                                  } else if(this.underworld.guardiantime < 2) {
+                                        if(this.underworld.guardiantime > 1) {
+                                            ctx.fillText("We are the ones bringing you back", 0, 178);
+                                            ctx.fillText("to life.", 0, 188);
+                                        }
+                                        if(this.underworld.guardiantime > 1.400) {
+                                            ctx.fillText("You can go back again. But if you do", 0, 198);
+                                        }
+                                        if(this.underworld.guardiantime > 1.700) {
+                                            ctx.fillText("You MUST find the artifact and", 0, 208);
+                                            ctx.fillText("save the world.", 0, 218);
+                                        }
+                                  } else {
+                                        if(this.underworld.guardiantime > 2) {
+                                            ctx.fillText("But you must not come into the", 0, 178);
+                                            ctx.fillText("Underworld alive again.", 0, 188);
+                                        }
+                                        if(this.underworld.guardiantime > 2.400) {
+                                            ctx.fillText("Or else you'll never leave.", 0, 198);
+                                        }
+                                        if(this.underworld.guardiantime > 2.600) {
+                                            ctx.fillText("Press right arrow to go back", 0, 218);
+                                            if(this.underworld.guardiantime > 2.800) {
+                                                  ctx.fillText("Or press left arrow to stay in the", 0, 228);
+                                                  ctx.fillText("Underworld", 0, 238);
+                                            }
+                                            if(playerInputs.arrowright === true) {
+                                                  this.properties.status = 1;
+                                            } else if(playerInputs.arrowleft === true) {
+                                                  this.properties.status = 7;
+                                            }
+                                        }
+                                  }
+                              }
+                        }
+                    }
+              }
+
+              secretEnding() {
+                    c.width = 258;
+                    this.se.time += 0.01;
+                    ctx.fillStyle = "white";
+                    if (this.se.time < 20) {
+                        if(this.se.time > 0) {
+                              ctx.fillStyle = "white";
+                              ctx.fillText("You spoke with both of the villains parents.", 0, 58);
+                        }
+                        if(this.se.time > 1) {
+                              ctx.fillText("As the father said, the villain was a", 0, 68);
+                              ctx.fillText("top scholar.", 0, 78)
+                        }
+                        if(this.se.time > 3) {
+                              ctx.fillText("But the parents... They never spent quality", 0, 88);
+                              ctx.fillText("time with the villain.", 0, 98);
+                        }
+                        if(this.se.time > 5) {
+                              ctx.fillText("They wanted him to be successful. They made", 0, 108);
+                              ctx.fillText("him focus on school and nothing more.", 0, 118);
+                        }
+                        if(this.se.time > 7) {
+                              ctx.fillText("They were blinded. They had high hopes.", 0, 128);
+                        }
+                        if(this.se.time > 8) {
+                              ctx.fillText("But with these high hopes came dysfunction.", 0, 138);
+                              ctx.fillText("The villain didn't feel any love from his parents.", 0, 148);
+                        }
+                        if(this.se.time > 11) {
+                              ctx.fillText("The parents then sent their son to a ", 0, 158);
+                              ctx.fillText("school for gifted children.", 0, 168);
+                        }
+                        if(this.se.time > 13) {
+                              ctx.fillText("It was here where the villain learned about", 0, 178);
+                              ctx.fillText("the artifact.", 0, 188);
+                        }
+                        if(this.se.time > 15) {
+                              ctx.fillText("He turned it into his life's purpose.", 0, 198);
+                        }
+                        if(this.se.time > 17) {
+                              ctx.fillText("His parents never saw him after he left the school", 0, 208);
+                        }
+                    }
+                    if(this.se.time > 20) {
+                        this.ending(player_handler, windflower_handler, enemy_handler);
+                    }
+              }
+
+              render(currentLevel, playerProperties) {
+                    // Camera Position \\
+                    this.desired.camx = playerProperties.x - 100;
+                    this.desired.camy = Math.floor(playerProperties.y - 100);
+                    if(Math.sqrt((((this.desired.camx) - (this.properties.cameraX)) ** 2) + ((this.desired.camy - this.properties.cameraY) ** 2)) > 5) {
+                        this.properties.cameraX += Math.floor((this.desired.camx - this.properties.cameraX) / 8);
+                        this.properties.cameraY += Math.floor((this.desired.camy - this.properties.cameraY) / 8);
+                    }
+                    // Making the game look a bit better with camera clamps
+                    if(this.properties.cameraX < 0) {
+                        this.properties.cameraX = 0;
+                    }
+                    if(this.properties.cameraX + 256 > levels[this.properties.level][1].length * 32) {
+                        this.properties.cameraX = (levels[this.properties.level][1].length * 32) - 256;
+                    }
+                    
+
+                    // Preparing for Render
+                    this.checkmap.roundedx = Math.round(this.properties.cameraX / 32);
+                    this.checkmap.startingx = this.checkmap.roundedx - 1;
+                    if(this.checkmap.startingx < 0) {
+                        this.checkmap.startingx = 0;
+                    }
+                    this.checkmap.endingx = this.checkmap.roundedx + 9;
+                    if(this.checkmap.endingx > levels[currentLevel][1].length) {
+                        this.checkmap.endingx = levels[currentLevel][1].length;
+                    }
+                    // Rendering \\
+                    ctx.drawImage(renderImages.bgtexture, 0, 0, 256, 256);
+                    ctx.fillStyle = "#a1c3b2";
+                    ctx.fillRect(0, 256 + (0 - this.properties.cameraY) * 0.15, 256, 100);
+                    ctx.drawImage(renderImages.bgparallaxmount, (0 - this.properties.cameraX) * 0.15, (50 - this.properties.cameraY) * 0.15, 640, 256);
+                    ctx.drawImage(renderImages.bgparallaxmount, 640 + ((0 - this.properties.cameraX) * 0.15), (50 - this.properties.cameraY) * 0.15, 640, 256);
+                    for(let row = 0; row < levels[currentLevel].length; row += 1) {
+                        for(let col = this.checkmap.startingx; col < this.checkmap.endingx; col += 1) {
+                              this.currentTile = levels[currentLevel][row][col];
+                              if(this.currentTile === 1) {
+                                  ctx.drawImage(renderImages.grasstile1, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              } 
+                              if(this.currentTile === 2) {
+                                  ctx.fillStyle = "#27251d";
+                                  ctx.fillRect((col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 3) {
+                                  ctx.drawImage(renderImages.spike, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 5) {
+                                  ctx.drawImage(renderImages.grassedge1, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 6) {
+                                  ctx.drawImage(renderImages.grassedge2, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 4) {
+                                  ctx.drawImage(renderImages.decograss1, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 7) {
+                                ctx.drawImage(renderImages.doublegrassedge, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 9) {
+                                  ctx.drawImage(renderImages.spikebe, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 10) {
+                                  ctx.drawImage(renderImages.decograssledge, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 11) {
+                                  ctx.drawImage(renderImages.spikele, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 12) {
+                                  ctx.drawImage(renderImages.spikere, (col * 32) - this.properties.cameraX, (row * 32) -this.properties.cameraY, 32, 32);
+                              }
+                              if(this.currentTile === 13) {
+                                  if(levels[currentLevel][row][col - 1] === 1) {
+                                        ctx.drawImage(renderImages.grassedge2, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                                  } else if(levels[currentLevel][row][col + 1] === 1) {
+                                        ctx.drawImage(renderImages.grassedge2, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 32);
+                                  }
+                              }
+                              if(this.currentTile === 14) {
+                                  ctx.drawImage(renderImages.parentshouse, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY);
+                              }
+                              if(this.currentTile === 17) {
+                                  ctx.drawImage(renderImages.endsign, (col * 32) - this.properties.cameraX, (row * 32) - this.properties.cameraY, 32, 64);
+                              }
+                        }
+                    }
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(levels[currentLevel][1].length * 32, 0, 256, levels[currentLevel].length * 32);
+              }
+          }
+
+          class DoorWithKey {
+              constructor(x, y, keyx, keyy) {
+                    this.properties = {
+                        x: x,
+                        y: y,
+                        keyprops: {
+                              x: keyx,
+                              y: keyy,
+                              pickedup: false,
+                              origx: keyx,
+                              origy: keyy
+                        },
+                        posinmap: {
+                              y: 0,
+                              x: 0
+                        },
+                        unlocked: false
+                    }
+                    this.checkDoor;
+                    this.died = timesDied;
+              }
+              setup(currentlevel) {
+                    for(let drow = 0; drow < levels[currentlevel].length; drow++) {
+                        for(let dcol = 0; dcol < levels[currentlevel][drow].length; dcol++) {
+                              this.checkDoor = levels[currentlevel][drow][dcol];
+                              if(this.checkDoor === 16) {
+                                  if(drow * 32 === this.properties.y && dcol * 32 === this.properties.x) {
+                                        this.properties.posinmap.y = drow;
+                                        this.properties.posinmap.x = dcol;
+                                        return;
+                                  }
+                              }
+                        }
+                    }
+              }
+
+              init(playerprops, cameraprops) {
+                    // Door stuff
+                    if (this.properties.unlocked === false) {
+                        if(this.properties.keyprops.pickedup === false) {
+                              if(Math.sqrt((((playerprops.x + 14) - (this.properties.keyprops.x + 16)) ** 2) + ((playerprops.y - this.properties.keyprops.y) ** 2)) < 12) {
+                                  this.properties.keyprops.pickedup = true;
+                              }
+                        } else {
+                              if(timesDied > this.died) {
+                                  this.properties.keyprops.x = this.properties.keyprops.origx;
+                                  this.properties.keyprops.y = this.properties.keyprops.origy;
+                                  this.died = timesDied;
+                                  this.properties.keyprops.pickedup = false;
+                                  return;
+                              }
+                              this.properties.keyprops.x = playerprops.x;
+                              this.properties.keyprops.y = playerprops.y - 20;
+                              if(Math.sqrt((((playerprops.x + 14) - (this.properties.x + 16)) ** 2) + (playerprops.y - this.properties.y) ** 2) < 32) {
+                                  levels[game_handler.properties.level][this.properties.posinmap.y][this.properties.posinmap.x] = 0;
+                                  this.properties.unlocked = true;
+                              }
+                        }
+                        ctx.drawImage(renderImages.door, 0, 0, 64, 64, this.properties.x - cameraprops.cameraX, this.properties.y - cameraprops.cameraY, 32, 32);
+                        ctx.drawImage(renderImages.doorkey, 0, 0, 64, 64, this.properties.keyprops.x - cameraprops.cameraX, this.properties.keyprops.y - cameraprops.cameraY, 32, 32);
+                    }
+              }
+          }
+
+          class DoorWithMonsters {
+              constructor(x, y) {
+                    this.properties = {
+                        x: x,
+                        y: y,
+                        enemiesKilled: 0,
+                        posinmap: {
+                              y: 0,
+                              x: 0
+                        },
+                        unlocked: false
+                    }
+                    this.checkDoor;
+                    this.activated = false;
+                    this.enemiesNeeded = 0;
+              }
+
+              setup(currentLevel) {
+                    for(let drow = 0; drow < levels[currentLevel].length; drow++) {
+                        for(let dcol = 0; dcol < levels[currentLevel][drow].length; dcol++) {
+                              this.checkDoor = levels[currentLevel][drow][dcol];
+                              if(this.checkDoor === 16) {
+                                  if(drow * 32 === this.properties.y && dcol * 32 === this.properties.x) {
+                                        this.properties.posinmap.y = drow;
+                                        this.properties.posinmap.x = dcol;
+                                        return;
+                                  }
+                              }
+                        }
+                    }
+              }
+
+              init(playerprops, cameraprops) {
+                    if (this.properties.unlocked === false) {
+                        if(this.activated === false) {
+                              if(Math.sqrt((((playerprops.x + 16) - this.properties.x) ** 2) + (playerprops.y - this.properties.y) ** 2) < 64) {
+                                  this.activated = true;
+                                  this.enemiesNeeded = enemiesKilled + 8;
+                              }
+                        } else if(this.activated) {
+                              ctx.fillStyle = "#a99273";
+                              ctx.fillRect(118, 240, 128, 10);
+                              ctx.strokeStyle = "#4f341f";
+                              ctx.lineWidth = 2;
+                              ctx.strokeRect(117, 239, 130, 12);
+                              ctx.fillStyle = "#c9af72";
+                              ctx.fillRect(118, 240, (enemiesKilled - (this.enemiesNeeded - 8)) * 16, 10);
+                              ctx.drawImage(renderImages.enemieskilledlabel, 120, 245 - 16, 63, 8);
+                              if(enemiesKilled >= this.enemiesNeeded) {
+                                  this.properties.unlocked = true;
+                                  levels[cameraprops.level][this.properties.posinmap.y][this.properties.posinmap.x] = 0;
+                              }
+                        }
+                        ctx.drawImage(renderImages.door, 0, 0, 64, 64, this.properties.x - cameraprops.cameraX, this.properties.y - cameraprops.cameraY, 32, 32);
+                    }
+              }
+          }
+
+          class HealingBush {
+              constructor() {
+                    this.properties = {
+                        spawnx: [],
+                        spawny: [],
+                        state: [], // 1 = Sleepy, 2 = Healing, 3 = Hostile
+                        currentx: [],
+                        currenty: [],
+                        speed: 1,
+                        stateCount: [],
+                        wakingAnim: [],
+                        waking: [],
+                        dir: []
+                    }
+                    this.hitbox = {
+                        width: 28,
+                        height: 31
+                    }
+                    this.check = {
+                        x: 0,
+                        y: 0,
+                        tile: 0,
+                        startingx: 0,
+                        endingx: 0,
+                        xrounded: 0,
+                    }
+                    this.index;
+                    this.checkCol;
+                    this.buttonAnim = 0;
+                    this.heal = false;
+              }
+
+              setupHealingBush(currentLevel) {
+                    for(this.check.y = 0; this.check.y < levels[currentLevel].length; this.check.y++) {
+                        for(this.check.x = 0; this.check.x < levels[currentLevel][this.check.y].length; this.check.x++) {
+                              this.check.tile = levels[currentLevel][this.check.y][this.check.x];
+                              if(this.check.tile === 15) {
+                                  this.properties.spawnx.push(this.check.x * 32);
+                                  this.properties.spawny.push(this.check.y * 32);
+                                  this.properties.currentx.push(this.check.x * 32);
+                                  this.properties.currenty.push(this.check.y * 32);
+                                  this.properties.state.push(1);
+                                  this.properties.stateCount.push(0);
+                                  this.properties.wakingAnim.push(0);
+                                  this.properties.waking.push(false);
+                                  this.properties.dir.push(0);
+                              }
+                        }
+                    }
+              }
+
+              die(index) {
+                    this.properties.spawnx.splice(index, 1);
+                    this.properties.spawny.splice(index, 1);
+                    this.properties.currentx.splice(index, 1);
+                    this.properties.currenty.splice(index, 1);
+                    this.properties.state.splice(index, 1);
+                    this.properties.stateCount.splice(index, 1);
+                    this.properties.wakingAnim.splice(index, 1);
+                    this.properties.waking.splice(index, 1);
+                    this.properties.dir.splice(index, 1);
+              }
+
+              init(cameraprops, playerprops) {
+                    for(this.index = 0; this.index < this.properties.state.length; this.index++) {
+                        // Healing bush monster thing
+                        if(this.properties.state[this.index] === 1) {
+                              if(Math.sqrt(((playerprops.x - this.properties.currentx[this.index]) ** 2) + ((playerprops.y - this.properties.currenty[this.index]) ** 2)) < 30) {
+                                  this.properties.stateCount[this.index] += 0.1;
+                                  if(this.properties.stateCount[this.index] > 5) {
+                                        this.properties.state[this.index] = 2;
+                                        this.properties.waking[this.index] = true;
+                                  }
+                              } else {
+                                  this.properties.stateCount[this.index] = 0;
+                              }
+                        }
+                        if(this.properties.state[this.index] === 2 && this.properties.waking[this.index] === false) {
+                              // If the healing bush is awake
+                              this.checkCol = true;
+                              this.check.roundedx = Math.round(this.properties.currentx / 32)
+                              this.check.startingx = this.check.roundedx - 3;
+                              this.check.endingx = this.check.roundedx + 3;
+                              this.properties.currenty[this.index] += 1;
+                              for(this.check.y = 0; this.check.y < levels[cameraprops.level].length; this.check.y++) {
+                                  for(this.check.x = this.check.startingx; this.check.x < levels[cameraprops.level][this.check.y].length; this.check.x++) {
+                                        this.check.tile = levels[cameraprops.level][this.check.y][this.check.x];
+                                        if(this.check.tile > 0 && this.check.tile < 4) {
+                                            if(!(this.check.tile === 3)) {
+                                                  if(this.properties.currentx[this.index] >= this.check.x * 32 && this.properties.currentx[this.index] <= (this.check.x * 32) + 32) {
+                                                      if(this.properties.currenty[this.index] + this.hitbox.height >= this.check.y * 32) {
+                                                            if(this.properties.currenty[this.index] < this.check.y * 32) {
+                                                                this.properties.currenty[this.index] = ((this.check.y * 32) - this.hitbox.height) - 1;
+                                                                this.checkCol = false;
+                                                            }
+                                                      }
+                                                  }
+                                            } else if(this.properties.currentx[this.index] >= this.check.x * 32 && this.properties.currentx[this.index] < (this.check.x * 32) + 32) {
+                                                  if(this.properties.currenty[this.index] + this.hitbox.height >= (this.check.y * 32) + 16) {
+                                                      if(this.properties.currenty[this.index] < (this.check.y * 32) + 16) {
+                                                            this.checkCol = false;
+                                                            this.die(this.index);
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                        if(this.checkCol) {
+                                            if(this.check.tile > 0 && this.check.tile < 4) {
+                                                  if(!(this.check.tile === 3)) {
+                                                      if(this.properties.currentx[this.index] + this.hitbox.width >= this.check.x * 32 && this.properties.currentx[this.index] + this.hitbox.width <= (this.check.x * 32) + 32) {
+                                                            if(this.properties.currenty[this.index] + this.hitbox.height >= this.check.y * 32) {
+                                                                if(this.properties.currenty[this.index] < this.check.y * 32) {
+                                                                      this.properties.currenty[this.index] = ((this.check.y * 32) - this.hitbox.height) - 1;
+                                                                      this.checkCol = false;
+                                                                }
+                                                            }
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                  }
+                              }
+
+                              if(Math.sqrt(((playerprops.x - this.properties.currentx[this.index]) ** 2) + ((playerprops.y - this.properties.currenty[this.index]) ** 2)) > 20) {
+                                  if(playerprops.x > this.properties.currentx[this.index]) {
+                                        // Moving to the right if the player is to the right.
+                                        this.properties.dir[this.index] = 1;
+                                        this.properties.currentx[this.index] += this.properties.speed;
+                                        for(this.check.y = 0; this.check.y < levels[cameraprops.level].length; this.check.y++) {
+                                            for(this.check.x = this.check.startingx; this.check.x < levels[cameraprops.level][this.check.y].length; this.check.x++) {
+                                                  this.check.tile = levels[cameraprops.level][this.check.y][this.check.x];
+                                                  if(this.check.tile > 0 && this.check.tile < 4) {
+                                                      if(!(this.check.tile === 3)) {
+                                                            if(this.properties.currentx[this.index] + this.hitbox.width >= this.check.x * 32 && this.properties.currentx[this.index] + this.hitbox.width <= (this.check.x * 32) + 32) {
+                                                                if(this.properties.currenty[this.index] + this.hitbox.height >= this.check.y * 32) {
+                                                                      if(this.properties.currenty[this.index] <= this.check.y * 32) {
+                                                                          this.properties.currentx[this.index] = ((this.check.x * 32) - this.hitbox.width) - 1;
+                                                                      }
+                                                                }
+                                                            }
+                                                      } else if(this.properties.currentx[this.index] + this.hitbox.width >= this.check.x * 32 && this.properties.currentx[this.index] + this.hitbox.width < (this.check.x * 32) + 32) {
+                                                            if(this.properties.currenty[this.index] + this.hitbox.height >= (this.check.y * 32) + 16) {
+                                                                if(this.properties.currenty[this.index] < (this.check.y * 32) + 16) {
+                                                                      this.die(this.index);
+                                                                }
+                                                            }
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                  } else if(playerprops.x < this.properties.currentx[this.index]) {
+                                        // Moving to the left if the player is to the left.
+                                        this.properties.dir[this.index] = 0;
+                                        this.properties.currentx[this.index] -= this.properties.speed;
+                                        for(this.check.y = 0; this.check.y < levels[cameraprops.level].length; this.check.y++) {
+                                            for(this.check.x = this.check.startingx; this.check.x < levels[cameraprops.level][this.check.y].length; this.check.x++) {
+                                                  this.check.tile = levels[cameraprops.level][this.check.y][this.check.x];
+                                                  if(this.check.tile > 0 && this.check.tile < 4) {
+                                                      if(!(this.check.tile === 3)) {
+                                                            if(this.properties.currentx[this.index] >= this.check.x * 32 && this.properties.currentx[this.index] <= (this.check.x * 32) + 32) {
+                                                                if(this.properties.currenty[this.index] + this.hitbox.height >= this.check.y * 32) {
+                                                                      if(this.properties.currenty[this.index] <= this.check.y * 32) {
+                                                                          this.properties.currentx[this.index] = ((this.check.x * 32) + 32) + 1;
+                                                                      }
+                                                                }
+                                                            }
+                                                      } else if(this.properties.currentx[this.index] >= this.check.x * 32 && this.properties.currentx[this.index] < (this.check.x * 32) + 32) {
+                                                            if(this.properties.currenty[this.index] + this.hitbox.height >= (this.check.y * 32) + 16) {
+                                                                if(this.properties.currenty[this.index] < (this.check.y * 32) + 16) {
+                                                                      this.die(this.index);
+                                                                }
+                                                            }
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                  }
+                              }
+                        }
+                        if(this.properties.waking[this.index] === true) {
+                              this.properties.wakingAnim[this.index] += 0.2;
+                              ctx.drawImage(renderImages.healingbushmonster, Math.round(this.properties.wakingAnim) * 64, 0, 64, 64, this.properties.currentx[this.index] - cameraprops.cameraX, this.properties.currenty[this.index] - cameraprops.cameraY, 32, 32);
+                              if(this.properties.wakingAnim[this.index] > 13) {
+                                  this.properties.waking[this.index] = false;
+                              }
+                        } else {
+                              if(this.properties.state[this.index] === 1) {
+                                  ctx.drawImage(renderImages.healingbushmonster, 0, 0, 64, 64, this.properties.currentx[this.index] - cameraprops.cameraX, this.properties.currenty[this.index] - cameraprops.cameraY, 32, 32);
+                              } else if(this.properties.state[this.index] === 2) {
+                                  if(playerInputs.z === true) {
+                                        console.log("zPressed");
+                                        if(Math.sqrt(((playerprops.x - this.properties.currentx[this.index]) ** 2) + ((playerprops.y - this.properties.currenty[this.index]) ** 2)) < 20) {
+                                            console.log("player is close enough");
+                                            if(this.heal === false) {
+                                                  if(playerprops.health < 10) {
+                                                      playerprops.health += 1;
+                                                  }
+                                                  this.heal = true;
+                                            }
+                                        }
+                                  } else {
+                                        this.heal = false;
+                                  }
+                                  ctx.drawImage(renderImages.healingbushmonster, 0, 64 + (this.properties.dir[this.index] * 64), 64, 64, this.properties.currentx[this.index] - cameraprops.cameraX, this.properties.currenty[this.index] - cameraprops.cameraY, 32, 32);
+                                  this.buttonAnim += 0.1;
+                                  if(this.buttonAnim > 2) {
+                                        this.buttonAnim = 0;
+                                  }
+                                  ctx.drawImage(renderImages.buttonheal, 80 * Math.round(this.buttonAnim), 0, 80, 64, this.properties.currentx[this.index] - cameraprops.cameraX, (this.properties.currenty[this.index] - 20) - cameraprops.cameraY, 40, 32);
+                              }
+                        }
+                    }
+              }
+          }
+
+          class Windflower {
+              constructor() {
+                    this.num_of_windflower = 0;
+                    this.windflower_properties = {
+                        x: [],
+                        y: [],
+                        anim: [],
+                        charge: []
+                    };
+                    this.setup = true;
+                    this.checkTile = 0;
+                    this.currentwindflower;
+                    this.windex = 0;
+              }
+
+              setupWindflower(currentLevel) {
+                    this.num_of_windflower = 0;
+                    for(let wrow = 0; wrow < levels[currentLevel].length; wrow++) {
+                        for(let wcol = 0; wcol < levels[currentLevel][wrow].length; wcol++) {
+                              this.checkTile = levels[currentLevel][wrow][wcol];
+                              if(this.checkTile === 13) {
+                                  this.num_of_windflower += 1;
+                                  this.windflower_properties.x.push(wcol * 32);
+                                  this.windflower_properties.y.push(wrow * 32);
+                                  this.windflower_properties.anim.push(0);
+                                  this.windflower_properties.charge.push(0);
+                              }
+                        }
+                    }
+                    this.setup = false;
+              }
+
+              init(playerprops, cameraprops) {
+                    for(this.windex = 0; this.windex < this.num_of_windflower; this.windex++) {
+                        // Windflower Code \\
+                        this.currentwindflower = {
+                              x: this.windflower_properties.x[this.windex],
+                              y: this.windflower_properties.y[this.windex],
+                              anim: this.windflower_properties.anim[this.windex],
+                              charge: this.windflower_properties.charge[this.windex]
+                        }
+                        if(!(this.currentwindflower.anim + 0.2 > 3.5)) {
+                              this.windflower_properties.anim[this.windex] += 0.2;
+                        } else {
+                              this.windflower_properties.anim[this.windex] = 0;
+                        }
+                        if(playerprops.onwindflower) {
+                              // If the player is on the windflower, charge up the windflower jump
+                              if(!(this.currentwindflower.charge + 0.3 > 6.5)) {
+                                  this.windflower_properties.charge[this.windex] += 0.2;
+                              } else {
+                                  this.windflower_properties.charge[this.windex] = 0;
+                                  playerprops.gravity = 10;
+                                  playerprops.onwindflower = false;
+                              }
+                        } else {
+                              this.windflower_properties.charge[this.windex] = 0;
+                        }
+                        // Drawing the windflower if it is onscreen
+                        if(playerprops.onwindflower) {
+                              ctx.drawImage(renderImages.windflowerconc, Math.round(this.windflower_properties.charge[this.windex]) * 64, 64, 64, 64, this.currentwindflower.x - cameraprops.cameraX, this.currentwindflower.y - cameraprops.cameraY, 32, 32);
+                        } else {
+                              ctx.drawImage(renderImages.windflowerconc, Math.round(this.windflower_properties.anim[this.windex]) * 64, 0, 64, 64, this.currentwindflower.x - cameraprops.cameraX, this.currentwindflower.y - cameraprops.cameraY, 32, 32);
+                        }
+                    }
+              }
+          }
+
+          class NPC {
+              constructor(x, y, texture, dialogue1, dialogue2, dialogue3, dialogue4) {
+                    this.properties = {
+                        x: x,
+                        y: y
+                    }
+                    this.zpressed = false;
+                    this.speak = [];
+                    this.goodlooks = texture;
+                    // Setting up dialogue
+                    this.speak.push(dialogue1.split("/n"));
+                    if(!(dialogue2 === undefined)) {
+                        this.speak.push(dialogue2.split("/n"));
+                        if(!(dialogue3 === undefined)) {
+                              this.speak.push(dialogue3.split("/n"));
+                              if(!(dialogue4 === undefined)) {
+                                  this.speak.push(dialogue4.split("/n"));
+                              }
+                        }
+                    }
+                    this.speaking = false;
+                    this.speakTimer = 0;
+                    this.spoken = false; // If already spoken, don't speak again.
+                    this.parent = false;
+              }
+
+              init(playerprops) {
+                    ctx.drawImage(this.goodlooks, this.properties.x - game_handler.properties.cameraX, this.properties.y - game_handler.properties.cameraY, 28, 28);
+                    if(this.speaking === false) {
+                        if(Math.sqrt((((playerprops.x + 14) - (this.properties.x + 14)) ** 2) + ((playerprops.y - this.properties.y) ** 2)) < 30) {
+                              ctx.drawImage(renderImages.speakkeyhint, 30, 220, 76, 32);
+                              if(playerInputs.z === true) {
+                                  if(this.zpressed === false) {
+                                        this.speaking = true;
+                                        controlsAllowed = false;
+                                        this.zpressed = true;
+                                        if(!(this.parent === false)) {
+                                            parentsSpoken[this.parent] = true;
+                                        }
+                                        console.log(this.speakTimer);
+                                        console.log(parentsSpoken);
+                                  }
+                              } else {
+                                  this.zpressed = false;
+                              }
+                        }
+                    } else {
+                        ctx.drawImage(renderImages.dialoguebg, 0, 16);
+                        if(playerInputs.z === true) {
+                              if(this.zpressed === false) {
+                                  console.log(this.speakTimer);
+                                  this.speakTimer += 50;
+                                  this.zpressed = true;
+                              }
+                        } else {
+                              this.zpressed = false;
+                        }
+                        for(let dialogue_index = 0; dialogue_index < this.speak.length; dialogue_index++) {
+                              if(this.speakTimer >= 50 * dialogue_index && this.speakTimer < 50 * (dialogue_index + 1)) {
+                                  for(let i = 0; i < this.speak[dialogue_index].length; i++) {
+                                        ctx.fillStyle = "#27251d";
+                                        ctx.font = "10px Courier";
+                                        ctx.fillText(this.speak[dialogue_index][i], 20, 170 + (i * 15));
+                                  }
+                              }
+                              if(this.speakTimer >= this.speak.length * 50) {
+                                  this.speaking = false;
+                                  controlsAllowed = true;
+                                  this.speakTimer = 0;
+                                  this.spoken = true;
+                              }
+                        }
+                    }
+              }
+          }
+
+          class MainVillain {
+              constructor() {
+                    this.properties = {
+                        x: 128, 
+                        y: 868,
+                        skin: 0
+                    }
+                    this.activated = false;
+                    this.finalPos = {
+                        x: 401,
+                        y: 196,
+                        reached: false
+                    }
+                    this.dialogue = [
+                        ["I know you... You've been chasing me ", "all this time."],
+                        ["The monsters, the spikes, none of it", "stopped you."],
+                        ["Well... You're too late. I am now", "charging up the artifact. You will not", "stop me in time."],
+                        ["You failed."],
+                        ["** You must find a way up to the", "villain and stop him from charging up", "the artifact.**"]
+                    ];
+                    this.artifact = {
+                        x: 352,
+                        y: 198,
+                        xforce: 0,
+                        yforce: 0
+                    }
+                    this.dialogueidx = 0;
+                    this.currentText = 0;
+                    this.speaking = false;
+                    this.zpressed = false;
+                    this.droppedArtifact = false;
+              }
+
+              init() {
+                    if(this.speaking === false) {
+                        if(this.activated === false) {
+                              if(Math.sqrt((((player_handler.properties.x + 14) - (this.properties.x + 14)) ** 2) + ((player_handler.properties.y - this.properties.y) ** 2)) < 128) {
+                                  this.speaking = true;
+                                  this.zpressed = true;
+                                  this.currentText = 0;
+                                  controlsAllowed = false;                 
+                              }
+                        } else {
+                              if(this.activated === true) {
+                                  if(this.finalPos.reached === false) {
+                                        this.properties.x += Math.floor((this.finalPos.x - this.properties.x) / 50);
+                                        this.properties.y += Math.floor((this.finalPos.y - this.properties.y) / 50);
+                                        if(this.properties.x === 352 && this.properties.y === 196) {
+                                            this.finalPos.reached = true;
+                                        }
+                                  } else if(this.finalPos.reached === true) {
+                                        if (this.droppedArtifact === false) {
+                                            if(Math.sqrt((((player_handler.properties.x + 14) - (this.properties.x + 14)) ** 2) + ((player_handler.properties.y - this.properties.y) ** 2)) < 30) {
+                                                  ctx.drawImage(renderImages.endkeyhint, 30, 220, 121, 32);
+                                                  if(playerInputs.x) {
+                                                      this.droppedArtifact = true;
+                                                      if(player_handler.properties.x < this.properties.x) {
+                                                            this.artifact.xforce = 8;
+                                                      } else {
+                                                            this.artifact.xforce = -8;
+                                                      }
+                                                      this.artifact.yforce = 5;
+                                                  }
+                                            }
+                                        } else {
+                                            this.properties.skin = 2;
+                                            // Artifact code
+                                            if(this.artifact.xforce < 0) {
+                                                  this.artifact.xforce += 0.5;
+                                            } else if(this.artifact.xforce > 0) {
+                                                      this.artifact.xforce -= 0.5;
+                                            } else {
+                                                  if(Math.sqrt((((player_handler.properties.x + 14) - (this.artifact.x + 8)) ** 2) + ((player_handler.properties.y - this.artifact.y) ** 2)) < 30) {
+                                                      ctx.drawImage(renderImages.lastendkeyhint, 30, 220, 39, 32);
+                                                      if(playerInputs.z) {
+                                                            if(finalTimer > 0) {
+                                                                if(!(parentsSpoken[0] === true && parentsSpoken[1] === true)) {
+                                                                      game_handler.properties.status = 4;
+                                                                } else {
+                                                                      game_handler.properties.status = 10;
+                                                                }
+                                                            }
+                                                      }
+                                                  }
+                                            }
+                                            this.artifact.x += this.artifact.xforce;
+                                            this.artifact.yforce -= 0.5;
+                                            this.artifact.y -= this.artifact.yforce;
+                                            if(this.artifact.y > 196) {
+                                                  this.artifact.y = 196;
+                                            }
+                                            ctx.drawImage(renderImages.artifact, this.artifact.x - game_handler.properties.cameraX, this.artifact.y - game_handler.properties.cameraY, 16, 16);
+                                        }
+                                  }
+                              }
+                        }
+                    } else if(this.activated === false) {
+                        ctx.drawImage(renderImages.dialoguebg, 0, 16);
+                        if(playerInputs.z === true && this.zpressed === false) {
+                              this.currentText += 1;
+                              this.zpressed = true;
+                        } else if(playerInputs.z === false) {
+                              this.zpressed = false;
+                        }
+                        for(this.dialogueidx = 0; this.dialogueidx < this.dialogue.length; this.dialogueidx++) {
+                              if(this.currentText === this.dialogueidx) {
+                                  for(let i = 0; i < this.dialogue[this.dialogueidx].length; i++) {
+                                        ctx.fillStyle = "#27251d";
+                                        ctx.font = "10px Courier";
+                                        ctx.fillText(this.dialogue[this.dialogueidx][i], 20, 170 + (i * 15));
+                                  }
+                              }
+                        }
+                        if(this.currentText > this.dialogue.length - 1) {
+                              this.speaking = false;
+                              this.properties.skin = 1;
+                              controlsAllowed = true;
+                              monstersAllowed = true;
+                              this.activated = true;
+                        }
+                    }
+                    ctx.drawImage(renderImages.villain, this.properties.skin * 56, 0, 56, 56, this.properties.x - game_handler.properties.cameraX, this.properties.y - game_handler.properties.cameraY, 28, 28);
+              }
+          }
+
+          class Player_Controller {
+              constructor() {
+                    this.properties = {
+                        health: 10,
+                        spawning: true,
+                        spawnpoint: {
+                              x: 0,
+                              y: 0
+                        },
+                        x: 0,
+                        y: 0,
+                        width: 28,
+                        height: 28,
+                        gravity: 0,
+                        checkTile: 0,
+                        onfloor: false,
+                        checkCol: true,
+                        checkSides: [false, false],
+                        coyote: 0,
+                        dir: 0,
+                        anim: 0,
+                        attack: {
+                              attacking: false,
+                              anim: 0,
+                              finishedAttack: false
+                        },
+                        onwindflower: false
+                    };
+                    this.healthbar = {
+                        index: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+                    }
+
+                    this.arraycheck = {
+                        startingx: 0,
+                        endingx: 0,
+                        roundedx: 0
+                    };
+              }
+
+              spawnPlayer(currentLevel, levelsBase) {
+                    for(this.row = 0; this.row < levelsBase[currentLevel].length; this.row++) {
+                        for(this.col = 0; this.col < levelsBase[currentLevel][this.row].length; this.col++) {
+                              if(levelsBase[currentLevel][this.row][this.col] === 8) {
+                                  this.properties.x = this.col * 32;
+                                  this.properties.y = this.row * 32;
+                                  this.properties.spawnpoint.x = this.col * 32;
+                                  this.properties.spawnpoint.y = this.row * 32;
+                                  this.properties.width = 28;
+                                  this.properties.height = 28;
+                                  this.properties.spawning = false;
+                                  this.properties.health = 10;
+                                  return;
+                              }
+                        }
+                    }
+              }
+
+              init(currentLevel, levelsBase) {
+                    if(this.properties.spawning === true) {
+                        this.spawnPlayer(currentLevel, levelsBase);
+                    }
+                    // Checking if the player is dead.
+                    if(this.properties.health < 1) {
+                        this.properties.x = this.properties.spawnpoint.x;
+                        this.properties.y = this.properties.spawnpoint.y;
+                        this.properties.onfloor = false;
+                        this.properties.coyote = 10;
+                        this.properties.health = 10;
+                        game_handler.properties.status = 3;
+                    }
+
+                    // Gravity \\
+                    this.properties.checkCol = true;
+                    this.properties.gravity -= 0.4;
+                    this.properties.coyote += 0.1;
+                    this.properties.y -= this.properties.gravity;
+                    this.properties.onfloor = false;
+                    this.properties.onwindflower = false;
+
+                    this.arraycheck.roundedx = Math.round(this.properties.x / 32);
+                    this.arraycheck.startingx = this.arraycheck.roundedx - 4;
+                    if(this.arraycheck.startingx < 0) {
+                        this.arraycheck.startingx = 0;
+                        
+                    }
+                    this.arraycheck.endingx = this.arraycheck.roundedx + 3;
+
+                    for(let prow = 0; prow < levelsBase[currentLevel].length; prow++) {
+                        for(let pcol = this.arraycheck.startingx; pcol < this.arraycheck.endingx; pcol++) {
+                              this.properties.checkTile = levelsBase[currentLevel][prow][pcol];
+                              if(this.properties.checkTile > 0 && this.properties.checkTile < 4 || this.properties.checkTile === 9 || this.properties.checkTile === 11 || this.properties.checkTile === 12 || this.properties.checkTile === 13 || this.properties.checkTile === 16) {
+                                if(this.properties.checkTile === 3 || this.properties.checkTile === 9 || this.properties.checkTile === 11 || this.properties.checkTile === 12) {
+                                  if(this.properties.x >= pcol * 32 && this.properties.x < (pcol * 32) + 32) {
+                                if(this.properties.y + this.properties.height > (prow * 32) + 16) {
+                                  if(this.properties.y < (prow * 32) + 32) {
+                                    this.properties.coyote = 0;
+                                    // Checking where the tile is \\
+                                    if(this.properties.y < prow * 32) {
+                                      this.properties.x = this.properties.spawnpoint.x;
+                                      this.properties.y = this.properties.spawnpoint.y;
+                                      this.properties.onfloor = false;
+                                      this.properties.coyote = 10;
+                                                            this.properties.health = 10;
+                                                            this.properties.checkCol = false;
+                                                            game_handler.properties.status = 3;
+                                    } else if(this.properties.y > prow * 32) {
+                                          this.properties.y += this.properties.gravity;
+                                          this.properties.gravity = 0;
+                                                            this.properties.checkCol = false;
+                                        }
+                                      }
+                                      
+                                    }
+                                  }
+                                } else if(!(this.properties.checkTile === 13)) {
+                                    if(this.properties.x >= pcol * 32 && this.properties.x < (pcol * 32) + 32) {
+                                            if(this.properties.y + this.properties.height >= prow * 32) {
+                                              // Checking where the tile is \\
+                                              if(this.properties.y < prow * 32) {
+                                                      this.properties.y += this.properties.gravity;
+                                                  this.properties.gravity = 0;
+                                                  this.properties.onfloor = true;
+                                                      this.properties.coyote = 0;
+                                                      this.properties.checkCol = false;
+                                              } else if(this.properties.y > prow * 32) {
+                                                    if(this.properties.y < (prow * 32) + 32) {
+                                                            this.properties.y = ((prow * 32) + 32) + 1;
+                                                            this.properties.gravity = 0;
+                                                            this.properties.coyote = 10;
+                                                            this.properties.checkCol = false;
+                                                      }
+                                                  }
+                                            }
+                                          
+                                    }
+                                } else {
+                                        if(this.properties.x >= pcol * 32 && this.properties.x < (pcol * 32) + 32) {
+                                            if(this.properties.y + this.properties.height > (prow * 32) + 16) {
+                                                  if(this.properties.y < (prow * 32) + 16) {
+                                                      this.properties.y += this.properties.gravity;
+                                                      this.properties.gravity = 0;
+                                                      this.properties.coyote = 0;
+                                                      this.properties.onfloor = true;
+                                                      this.properties.checkCol = false;
+                                                      this.properties.onwindflower = true;
+                                                  }
+                                            }
+                                        }
+                                  }
+                              }
+                        }
+                    }
+                    if(this.properties.checkCol === true) {
+                        for(let prow = 0; prow < levelsBase[currentLevel].length; prow++) {
+                              for(let pcol = this.arraycheck.startingx; pcol < this.arraycheck.endingx; pcol++) {
+                                  this.properties.checkTile = levelsBase[currentLevel][prow][pcol];
+                                  if(this.properties.checkTile > 0 && this.properties.checkTile < 4 || this.properties.checkTile === 9 || this.properties.checkTile === 11 || this.properties.checkTile === 12 || this.properties.checkTile === 13 || this.properties.checkTile === 16) {
+                                    if(this.properties.checkTile === 3 || this.properties.checkTile === 9 || this.properties.checkTile === 11 || this.properties.checkTile === 12) {
+                                      if(this.properties.x + this.properties.width >= pcol * 32 && this.properties.x + this.properties.width < (pcol * 32) + 32) {
+                                        if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                        // Checking where the tile is \\
+                                        if(this.properties.y < prow * 32) {
+                                          this.properties.x = this.properties.spawnpoint.x;
+                                      this.properties.y = this.properties.spawnpoint.y;
+                                      this.properties.onfloor = false;
+                                      this.properties.coyote = 10;
+                                                            this.properties.health = 10;
+                                                            this.properties.checkCol = false;
+                                                            game_handler.properties.status = 3;
+                                        } else if(this.properties.y > prow * 32) {
+                                                            if(this.properties.y < (prow * 32) + 32) {
+                                              this.properties.y += this.properties.gravity;
+                                                  this.properties.gravity = 0;
+                                                                this.properties.checkCol = false;
+                                                            }
+                                      }
+                                        }
+                                      }
+                                    } else if(!(this.properties.checkTile === 13)) {
+                                          if(this.properties.x + this.properties.width >= pcol * 32 && this.properties.x + this.properties.width <= (pcol * 32) + 32) {
+                                              if(this.properties.y + this.properties.height >= prow * 32) {
+                                                  // Checking where the tile is \\
+                                                    if(this.properties.y <= prow * 32) {
+                                                            // Player is above
+                                                        this.properties.y += this.properties.gravity;
+                                                        this.properties.gravity = 0;
+                                                        this.properties.onfloor = true;
+                                                            this.properties.coyote = 0;
+                                                  } else if(this.properties.y > prow * 32) {
+                                                            if(this.properties.y < (prow * 32) + 32) {
+                                                                // Player is below
+                                                                this.properties.y = ((prow * 32) + 32) + 1;
+                                                                this.properties.gravity = 0;
+                                                                this.properties.coyote = 10;  
+                                                            }
+                                                    }
+                                                      this.properties.checkCol = false;
+                                              }
+                                          }
+                                    } else {
+                                            if(this.properties.x + this.properties.width >= pcol * 32) {
+                                                  if(this.properties.x + this.properties.width < (pcol * 32) + 32) {
+                                                      if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                                            if(this.properties.y < (prow * 32) + 16) {
+                                                                // Player is above windflower
+                                                                this.properties.y += this.properties.gravity;
+                                                                this.properties.gravity = 0;
+                                                                this.properties.onfloor = true;
+                                                                this.properties.coyote = 0;
+                                                                this.properties.onwindflower = true;
+                                                            } 
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                  } 
+                              }
+                        }
+                    }
+                    // More Inputs \\
+                    if(playerInputs.arrowup) {
+                        if(this.properties.onfloor === true) {
+                              this.properties.gravity = 6.4;
+                              this.properties.coyote = 10;
+                              this.properties.anim = 3.5;
+                              this.properties.onfloor = false;
+                        } else if(this.properties.coyote < 0.7) {
+                              this.properties.gravity = 6.4;
+                              this.properties.coyote = 10;
+                              this.properties.anim = 3.5;
+                              this.properties.onfloor = false;
+                        }
+                    }
+
+                    if(currentLevel > 1) {
+                        if(playerInputs.x) {
+                              if(this.properties.attack.attacking === false) {
+                                  this.properties.attack.attacking = true;
+                              }
+                        }
+                    }
+              }
+
+              collisiondetection(currentLevel, levelsBase, cameraX, cameraY) {
+                    if(this.properties.attack.finishedAttack ) {
+                        this.properties.attack.finishedAttack = false;
+                    }
+                    this.properties.checkSides[1] = true;
+                    this.properties.checkSides[2] = true;
+                    if(playerInputs.arrowright) {
+                        this.properties.dir = 0;
+                        if(this.properties.onfloor === true) {
+                              if(this.properties.attack.attacking === false) {
+                                  this.properties.anim += 0.2;
+                              }
+                        }
+                        this.properties.x += 3;
+                        
+                        for(let prow = 0; prow < levelsBase[currentLevel].length; prow++) {
+                              for(let pcol = 0; pcol < levelsBase[currentLevel][prow].length; pcol++) {
+                                  this.properties.checkTile = levelsBase[currentLevel][prow][pcol];
+                                  if(this.properties.checkTile > 0 && this.properties.checkTile < 4 || this.properties.checkTile === 13 || this.properties.checkTile === 16) {
+                                    if(this.properties.checkTile === 3 || this.properties.checkTile === 9) {
+                                      if(this.properties.x + this.properties.width >= pcol * 32) {
+                                        if(this.properties.x + this.properties.width <= (pcol * 32) + 32) {
+                                          if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                            if(this.properties.y + this.properties.height <= (prow * 32) + 32) {
+                                              this.properties.x = this.properties.spawnpoint.x;
+                                                              this.properties.y = this.properties.spawnpoint.y;
+                                                            this.properties.onfloor = false;
+                                                                this.properties.coyote = 10;
+                                                                this.properties.checkSides[2] = false;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    } else if(!(this.properties.checkTile === 13)) {
+                                          if(this.properties.x + this.properties.width >= pcol * 32) {
+                                              if(this.properties.x + this.properties.width <= (pcol * 32) + 32) {
+                                                    if(this.properties.y + this.properties.height >= prow * 32) {
+                                                        if(this.properties.y + this.properties.height <= (prow * 32) + 32) {
+                                                                this.properties.x = (pcol * 32) - (this.properties.width + 1);
+                                                              this.properties.checkSides[2] = false;
+                                                        }
+                                                    }
+                                              }     
+                                          }
+                                    } else {
+                                            if(this.properties.x + this.properties.width >= pcol * 32) {
+                                                  if(this.properties.x + this.properties.width <= (pcol * 32) + 32) {
+                                                      if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                                            if(this.properties.y < (prow * 32) + 16) {
+                                                                this.properties.x = (pcol * 32) - (this.properties.width + 1);
+                                                                this.properties.checkSides[2] = false;
+                                                            }
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                  }
+                              }
+                        }
+                        if(this.properties.checkSides[2] === true) {
+                              for(let prow = 0; prow < levelsBase[currentLevel].length; prow++) {
+                                  for(let pcol = 0; pcol < levelsBase[currentLevel][prow].length; pcol++) {
+                                        this.properties.checkTile = levelsBase[currentLevel][prow][pcol];
+                                        if(this.properties.checkTile > 0 && this.properties.checkTile < 4 || this.properties.checkTile === 13 || this.properties.checkTile === 16 || this.properties.checkTile === 12 || this.properties.checkTile === 9) {
+                                          if(this.properties.checkTile === 3 || this.properties.checkTile === 9 || this.properties.checkTile === 12) {
+                                            if(this.properties.x + this.properties.width >= pcol * 32) {
+                                              if(this.properties.x + this.properties.width <= (pcol * 32) + 32) {
+                                                if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                                  if(this.properties.y + 1 <= (prow * 32) + 32) {
+                                                    this.properties.x = this.properties.spawnpoint.x;
+                                                                  this.properties.y = this.properties.spawnpoint.y;
+                                                                  this.properties.onfloor = false;
+                                                                  this.properties.coyote = 10;
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          } else if(!(this.properties.checkTile === 13)) {
+                                              if(this.properties.x + this.properties.width >= pcol * 32) {
+                                                    if(this.properties.x + this.properties.width <= (pcol * 32) + 32) {
+                                                        if(this.properties.y + this.properties.height >= prow * 32) {
+                                                              if(this.properties.y + 1 <= (prow * 32) + 32) {
+                                                                      this.properties.x = (pcol * 32) - (this.properties.width + 1);
+                                                                  this.properties.checkSides[2] = false;
+                                                            }
+                                                        }
+                                                  }     
+                                              }
+                                          } else {
+                                                  if(this.properties.x + this.properties.width >= pcol * 32) {
+                                                      if(this.properties.x + this.properties.width < (pcol * 32) + 32) {
+                                                            if(this.properties.y + this.properties.height >= prow * 32) {
+                                                                if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                                                      if(this.properties.y + 1 < (prow * 32) + 16) {
+                                                                          this.properties.x = (pcol * 32) - (this.properties.width + 1);
+                                                                          this.properties.checkSides[2] = false;
+                                                                      }
+                                                                }
+                                                            }
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                  }
+                              }
+                        }
+
+                    } else if(playerInputs.arrowleft) {
+                        this.properties.dir = 1;
+                        if(this.properties.onfloor === true) {
+                              if(this.properties.attack.attacking === false) {
+                                  this.properties.anim += 0.2;
+                              }
+                        }
+                        this.properties.x -= 3;
+                        for(let prow = 0; prow < levelsBase[currentLevel].length; prow++) {
+                              for(let pcol = 0; pcol < levelsBase[currentLevel][prow].length; pcol++) {
+                                  this.properties.checkTile = levelsBase[currentLevel][prow][pcol];
+                                  if(this.properties.checkTile > 0 && this.properties.checkTile < 4 || this.properties.checkTile === 13 || this.properties.checkTile === 16 || this.properties.checkTile === 12 || this.properties.checkTile === 9) {
+                                    if(this.properties.checkTile === 3 || this.properties.checkTile === 9 || this.properties.checkTile === 12) {
+                                      if(this.properties.x >= pcol * 32) {
+                                        if(this.properties.x <= (pcol * 32) + 32) {
+                                          if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                            if(this.properties.y + 31 <= (prow * 32) + 32) {
+                                              this.properties.x = this.properties.spawnpoint.x;
+                                                              this.properties.y = this.properties.spawnpoint.y;
+                                                            this.properties.onfloor = false;
+                                                                this.properties.coyote = 10;
+                                                                this.properties.checkSides[1] = false;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    } else if(!(this.properties.checkTile === 13)) {
+                                          if(this.properties.x >= pcol * 32) {
+                                              if(this.properties.x <= (pcol * 32) + 32) {
+                                                    if(this.properties.y + this.properties.height >= prow * 32) {
+                                                        if(this.properties.y + 31 <= (prow * 32) + 32) {
+                                                                this.properties.x = (pcol * 32) + 33;
+                                                              this.properties.checkSides[1] = false;
+                                                        }
+                                                    }
+                                              }
+                                          }
+                                    } else {
+                                            if(this.properties.x >= pcol * 32) {
+                                                  if(this.properties.x <= (pcol * 32) + 32) {
+                                                      if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                                            if(this.properties.y + 31 <= (prow * 32) + 32) {
+                                                                this.properties.x = (pcol * 32) + 33;
+                                                                this.properties.checkSides[1] = false;
+                                                            }
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                  }
+                              }
+                        }
+                        if(this.properties.checkSides[1] === true) {
+                              for(let prow = 0; prow < levelsBase[currentLevel].length; prow++) {
+                                  for(let pcol = 0; pcol < levelsBase[currentLevel][prow].length; pcol++) {
+                                        this.properties.checkTile = levelsBase[currentLevel][prow][pcol];
+                                        if(this.properties.checkTile > 0 && this.properties.checkTile < 4 || this.properties.checkTile === 13 || this.properties.checkTile === 16) {
+                                          if(this.properties.checkTile === 3 || this.properties.checkTile === 9) {
+                                            if(this.properties.x >= pcol * 32) {
+                                              if(this.properties.x <= (pcol * 32) + 32) {
+                                                if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                                  if(this.properties.y + 1 <= (prow * 32) + 32) {
+                                                    this.properties.x = this.properties.spawnpoint.x;
+                                                                  this.properties.y = this.properties.spawnpoint.y;
+                                                                  this.properties.onfloor = false;
+                                                                  this.properties.coyote = 10;
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          } else if(!(this.properties.checkTile === 13)) {
+                                              if(this.properties.x >= pcol * 32) {
+                                                    if(this.properties.x <= (pcol * 32) + 32) {
+                                                        if(this.properties.y + this.properties.height >= prow * 32) {
+                                                              if(this.properties.y + 1 <= (prow * 32) + 32) {
+                                                                      this.properties.x = (pcol * 32) + 33;
+                                                                  this.properties.checkSides[1] = false;
+                                                            }
+                                                        }
+                                                  }
+                                              }
+                                          } else {
+                                                  if(this.properties.x >= pcol * 32) {
+                                                      if(this.properties.x <= (pcol * 32) + 32) {
+                                                            if(this.properties.y + this.properties.height >= (prow * 32) + 16) {
+                                                                if(this.properties.y + 1 <= (prow * 32) + 32) {
+                                                                      this.properties.x = (pcol * 32) + 33;
+                                                                      this.properties.checkSides[1] = false;
+                                                                }
+                                                            }
+                                                      }
+                                                  }
+                                            }
+                                        }
+                                  }
+                              }
+                        }
+                    } else {
+                        this.properties.anim = 0;
+                    }
+                    // Draw Character \\
+                    if(this.properties.attack.attacking) {
+                        this.properties.attack.anim += 0.4;
+                        if(this.properties.attack.anim > 7.4) {
+                              this.properties.attack.anim = 0;
+                              this.properties.attack.attacking = false;
+                              this.properties.attack.finishedAttack = true;
+                        }
+                    }
+                    if(this.properties.anim > 3.5) {
+                        if(this.properties.onfloor === true) {
+                              this.properties.anim = 0;
+                        }
+                    }
+                    if(this.properties.attack.attacking === false) {
+                        ctx.drawImage(renderImages.playertexture, Math.round(this.properties.anim) * (28 * 2), this.properties.dir * 56, this.properties.width * 2, this.properties.height * 2, Math.floor(this.properties.x - cameraX), Math.floor(this.properties.y - cameraY), this.properties.width, this.properties.height);
+                    } else {
+                        ctx.drawImage(renderImages.playerattack, Math.round(this.properties.attack.anim) * (28 * 2), this.properties.dir * 56, this.properties.width * 2, this.properties.height * 2, Math.floor(this.properties.x - cameraX), Math.floor(this.properties.y - cameraY), this.properties.width, this.properties.height);
+                    }
+                    // Drawing the health
+                    ctx.drawImage(renderImages.playerhealth, this.healthbar.index[this.properties.health - 1] * 200, 0, 200, 192, 0, 0, 100, 96);
+
+                    this.init(currentLevel, levelsBase, cameraX);
+              }
+          }
+
+          let game_handler = new gameInfo();
+          let player_handler;
+          let enemy_handler;
+          let windflower_handler;
+          let door_one; // level 1 door
+          let door_two; // level 1 door
+          let door_three; // level 2 door
+          let door_four; // level 2 door with monsters
+          let door_five; // level 3 door
+          let door_six; // level 3 door
+          let door_seven; // level 3 door
+          let door_eight; // boss fight door with monsters
+          let door_nine; // boss fight door 
+          let healing_bush_handler;
+          let NPC_one; // npc level 1
+          let NPC_two; // npc level 1
+          let NPC_three; // npc level 1
+          let NPC_four; // npc level 2
+          let NPC_five; // npc level 2
+          let NPC_six // npc level 2 
+          let door_ten; // the final door before the boss battle
+          let mainvillain;
+          let villainfather;
+          let villainmother;
+
+          function gotonextlevel() {
+              player_handler.properties.x = 20000;
+          }
+          function gotovillainend() {
+              player_handler.properties.x = 128;
+              player_handler.properties.y = 0;
+          }
+
+          function gameLoop() {
+              ctx.fillStyle = 'black';
+              ctx.fillRect(0, 0, c.width, c.height);
+              // Actual loop \\ 
+              if(game_handler.properties.status === 0) {
+                    if(assets === maxAssets) {
+                        game_handler.titleScreen();
+                    } else {
+                        ctx.fillStyle = "white";
+                        ctx.font = "10px Courier";
+                        ctx.fillText("Loading...", 0, 128);
+                    }
+              } else if(game_handler.properties.status === 1) {
+                // Checking if player passed the level \\
+                if(player_handler.properties.x > (levels[game_handler.properties.level][0].length * 32) - 32) {
+                  game_handler.properties.level += 1;
+                        if(game_handler.properties.level > Object.keys(levels).length) {
+                              game_handler.properties.status = 2;
+                              return;
+                        }
+                  player_handler = new Player_Controller();
+                  enemy_handler = new Enemyclass(0);
+                        windflower_handler = new Windflower();
+                        healing_bush_handler = new HealingBush();
+                }
+                    if(player_handler.properties.y > 4000) {
+                        game_handler.properties.status = 6;
+                        player_handler = new Player_Controller();
+                    }
+                // Game handling \\
+                    game_handler.render(game_handler.properties.level, player_handler.properties);
+                    if(windflower_handler.setup === true) {
+                        windflower_handler.setupWindflower(game_handler.properties.level);
+                        healing_bush_handler.setupHealingBush(game_handler.properties.level);
+                        if(game_handler.properties.level === 1) {
+                              door_one.setup(game_handler.properties.level);
+                              door_two.setup(game_handler.properties.level);
+                        } else if(game_handler.properties.level === 2) {
+                              door_three = new DoorWithKey(1344, 160, 960, 0);
+                              door_three.setup(game_handler.properties.level);
+                              door_four = new DoorWithMonsters(608, 64);
+                              door_four.setup(game_handler.properties.level);
+                              NPC_four = new NPC(98, 292, renderImages.npc1, "Nice going there! I've given you a /nsword. Press X to use it");
+                              NPC_five = new NPC(525, 68, renderImages.npc4, "This is a different door. This one is /nopened by killing a certain number of /nmonsters.", "Walk towards it to activate it.");
+                              NPC_six = new NPC(744, 518, renderImages.npc3, "You don't want to come down here.", "It's a waste of time. The guys down /nthere are real mood killers.");
+                              villainmother = new NPC(1111, 676, renderImages.villainmom, "Hello.", "I'm the mother of a very smart son. /nHave you seen him by any chance? He /nneeds to come home.", "You haven't?", "Well if you do find him... bring him /nhome please.");
+                              villainmother.parent = 0;
+                        } else if(game_handler.properties.level === 3) {
+                              door_five = new DoorWithKey(1344, 288, 512, 128);
+                              door_five.setup(game_handler.properties.level);
+                              door_six = new DoorWithKey(1024, 576, 995, 676);
+                              door_six.setup(game_handler.properties.level);
+                              door_seven = new DoorWithKey(672, 640, 896, 448);
+                              door_seven.setup(game_handler.properties.level);
+                        } else if(game_handler.properties.level === 5) {
+                              door_eight = new DoorWithMonsters(640, 736);
+                              door_eight.setup(game_handler.properties.level);
+                              door_nine = new DoorWithKey(576, 448, 128, 480);
+                              door_nine.setup(game_handler.properties.level);
+                              mainvillain = new MainVillain();
+                              monstersAllowed = false;
+                              enemy_handler.maxenemies = 40;
+                        } else if(game_handler.properties.level === 4) {
+                              villainfather = new NPC(1328, 516, renderImages.villaindad, "We wanted him to have a bright future. /nHe was a top scholar.", "Then... he started yelling about some /nartifact. I should've been there.", "He went insane.");
+                              villainfather.parent = 1;
+                              door_ten = new DoorWithKey(960, 192, 33, 452);
+                              door_ten.setup(game_handler.properties.level);
+                        }
+                    }
+                    // Misc
+                    windflower_handler.init(player_handler.properties, game_handler.properties);
+                    healing_bush_handler.init(game_handler.properties, player_handler.properties);
+                    // Doors
+                    if(game_handler.properties.level === 1) {
+                        door_one.init(player_handler.properties, game_handler.properties);
+                        door_two.init(player_handler.properties, game_handler.properties);
+                        NPC_one.init(player_handler.properties);
+                        NPC_two.init(player_handler.properties);
+                        NPC_three.init(player_handler.properties);
+                    } else if(game_handler.properties.level === 2) {
+                        door_three.init(player_handler.properties, game_handler.properties);
+                        door_four.init(player_handler.properties, game_handler.properties);
+                        NPC_four.init(player_handler.properties);
+                        NPC_five.init(player_handler.properties);
+                        NPC_six.init(player_handler.properties);
+                        villainmother.init(player_handler.properties);
+                    } else if(game_handler.properties.level === 3) {
+                        door_five.init(player_handler.properties, game_handler.properties);
+                        door_six.init(player_handler.properties, game_handler.properties);
+                        door_seven.init(player_handler.properties, game_handler.properties);
+                    } else if(game_handler.properties.level === 5) {
+                        mainvillain.init();
+                        door_eight.init(player_handler.properties, game_handler.properties);
+                        door_nine.init(player_handler.properties, game_handler.properties);
+                        if(mainvillain.activated === true) {
+                              finalTimer -= 0.020;
+                              ctx.fillStyle = "#c9af72";
+                              ctx.fillRect(5, 50, Math.round(finalTimer / 2), 10);
+                              ctx.font = "10px Courier";
+                              ctx.strokeStyle = "#4f341f";
+                              ctx.lineWidth = 2;
+                              ctx.strokeRect(4, 49, (210 / 2) + 2, 12);
+                              ctx.fillText("Time Remaining", 5, 70);
+                              if(finalTimer < 0) {
+                                  game_handler.properties.status = 5;
+                              }
+                        }
+                    } else if(game_handler.properties.level === 4) {
+                        villainfather.init(player_handler.properties);
+                        door_ten.init(player_handler.properties, game_handler.properties);
+                    }
+                    // Main Stuff
+                    player_handler.collisiondetection(game_handler.properties.level, levels, game_handler.properties.cameraX, game_handler.properties.cameraY, game_handler);
+                    if(game_handler.properties.level > 1) {
+                        if(monstersAllowed) {
+                              enemy_handler.init(game_handler.properties.cameraX, levels, game_handler.properties.level, player_handler.properties, game_handler.properties.cameraY);
+                        }
+                    }
+                    if(timesDied === 1 && flashOpacity > 0) {
+                        flashOpacity -= 0.005;
+                        ctx.fillStyle = `rgba(255, 255, 255, ${flashOpacity})`;
+                        ctx.fillRect(0, 0, c.width, c.height);
+                    }
+              } else if(game_handler.properties.status === 2) {
+                    game_handler.ending(player_handler, windflower_handler, enemy_handler);
+              } else if(game_handler.properties.status === 3) {
+                    game_handler.death(player_handler, enemy_handler, windflower_handler, healing_bush_handler);
+              } else if(game_handler.properties.status === 4) {
+                    game_handler.goodEnding();
+              } else if(game_handler.properties.status === 5) {
+                    game_handler.gameLost();
+              } else if(game_handler.properties.status === 6) {
+                    game_handler.underworldFound();
+              } else if(game_handler.properties.status === 7) {
+                    game_handler.underworldEnding();
+              } else if(game_handler.properties.status === 10) {
+                    game_handler.secretEnding();
+              }
+              console.log("Enemies Killed: " + enemiesKilled);
+          }
+
+          function setupGameInstance() {
+              game_handler.gameSetup();
+              htmlStartGameButton.style = "display: none;";
+              player_handler = new Player_Controller();
+              enemy_handler = new Enemyclass(0);
+              healing_bush_handler = new HealingBush();
+              door_one = new DoorWithKey(1056, 320, 512, 512);
+              door_two = new DoorWithKey(1760, 320, 1447, 190);
+              windflower_handler = new Windflower();
+              NPC_one = new NPC(256, 102, renderImages.npc1, "Hello, player. Use the arrow keys /nto move. Try jumping over those spikes.");
+              NPC_two = new NPC(640, 102, renderImages.npc2, "Hey, nice job getting past those /nspikes.", "Move ahead and you'll find a /nWindflower. ", "Stand on it for a few seconds and /nyou'll be launched into the air. /nUse it to jump to hard to reach /nplaces");
+              NPC_three = new NPC(1660, 324, renderImages.npc3, "This is a door... It's also locked. /nSo...", "Go find the key.");
+              game_handler.properties.status = 1;
+          }
+
+          function resetGame() {
+              game_handler = new gameInfo();
+              timesReset += 1;
+              htmlStartGameButton.style = "display: inline;";
+          }
+
+          setInterval(gameLoop, 20);
+
+          document.addEventListener("keydown", (e) => {
+              if(controlsAllowed) {
+                    if(e.key === "w") {
+                        playerInputs.arrowup = true;
+                    }
+                    if(e.key === "a") {
+                        playerInputs.arrowleft = true;
+                    }
+                    if(e.key === "d") {
+                        playerInputs.arrowright = true;
+                    }
+                    // Arrow Keys
+                    if(e.key === "ArrowLeft") {
+                        playerInputs.arrowleft = true; // For movement left
+                    }
+                    if(e.key === "ArrowRight") {
+                        playerInputs.arrowright = true; // For movement right
+                    }
+                    if(e.key === "ArrowUp") {
+                        playerInputs.arrowup = true; // For jump
+                    }
+                    // Extra Keys
+                    if(e.key === "x") {
+                        playerInputs.x = true; // For attacking
+                    }
+                    if(e.key === " ") {
+                        playerInputs.arrowup = true;
+                    }
+              }
+              if(e.key === "z") {
+                    playerInputs.z = true;
+              }
+          });
+          document.addEventListener("keyup", (e) => {
+              if(e.key === "w") {
+                    playerInputs.arrowup = false;
+              }
+              if(e.key === "a") {
+                    playerInputs.arrowleft = false;
+              }
+              if(e.key === "d") {
+                    playerInputs.arrowright = false;
+              }
+              // Arrow Keys
+              if(e.key === "ArrowLeft") {
+                    playerInputs.arrowleft = false;
+              }
+              if(e.key === "ArrowRight") {
+                    playerInputs.arrowright = false;
+              }
+              if(e.key === "ArrowUp") {
+                    playerInputs.arrowup = false;
+              }
+              if(e.key === "x") {
+                    playerInputs.x = false;
+              }
+              if(e.key === "z") {
+                    playerInputs.z = false;
+              }
+              if(e.key === " ") {
+                    playerInputs.arrowup = false;
+              }
+          });
+        </script>
+  </body>
+</html>
